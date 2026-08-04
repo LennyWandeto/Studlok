@@ -7,6 +7,31 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0853BE0FE65E43B79E965260 /* SharedStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2886BC79F536442D8BC2CB30 /* SharedStore.swift */; };
+		C06A5CCE6DD44414B5512A4B /* SharedStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2886BC79F536442D8BC2CB30 /* SharedStore.swift */; };
+		24972A1AF7B14E51B9FA1519 /* FamilyActivitySelectionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D404860C3374D95B10A7B7D /* FamilyActivitySelectionStore.swift */; };
+		4DC9C99E3F494AEFA70FF892 /* SharedStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2886BC79F536442D8BC2CB30 /* SharedStore.swift */; };
+		BF91863C75324211AC891D61 /* SharedStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2886BC79F536442D8BC2CB30 /* SharedStore.swift */; };
+		CADC14E5F270456D814A8656 /* SharedStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2886BC79F536442D8BC2CB30 /* SharedStore.swift */; };
+		D1BE65B1A77040579A5BC11F /* FamilyControls.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A7F7193B0EEB40BCB0423654 /* FamilyControls.framework */; };
+		A3F67C12807D4BDEB1DA191D /* SessionReconciler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D6A8370E3AA43C5B4654823 /* SessionReconciler.swift */; };
+		01AB2001D18C4135B7DEAB01 /* SessionReconciler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D6A8370E3AA43C5B4654823 /* SessionReconciler.swift */; };
+		DB69522B60F04F569066357D /* StudlokWatchdog.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3FEB09ED0C744F18AE82DCE /* StudlokWatchdog.swift */; };
+		B4EBC7913FB6449880CEB7F1 /* StudlokWatchdog.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3FEB09ED0C744F18AE82DCE /* StudlokWatchdog.swift */; };
+		5640E870C6B74C9DB67B8987 /* StudlokChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75BDF5E7B7FF4353A7557FEE /* StudlokChannel.swift */; };
+		17B6CFDDD2F846F887E4EDBB /* StudlokNotifications.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17A573CF5A9E4EFEA82F5077 /* StudlokNotifications.swift */; };
+		DC6E5A25CB094C338D64204B /* StudlokBackgroundRefresh.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46210494F242434682ABCC17 /* StudlokBackgroundRefresh.swift */; };
+		89D193FB2C224721A23F0F40 /* StudlokIdentifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = C84325AEF07D4ABCBFD76125 /* StudlokIdentifiers.swift */; };
+		1C624E549A7947A197F1394C /* StudlokIdentifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = C84325AEF07D4ABCBFD76125 /* StudlokIdentifiers.swift */; };
+		D030D5BD54F84D7BB8F7B97C /* FamilyActivitySelectionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D404860C3374D95B10A7B7D /* FamilyActivitySelectionStore.swift */; };
+		F87A6DB590A643C6A2D6B916 /* FamilyControls.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A7F7193B0EEB40BCB0423654 /* FamilyControls.framework */; };
+		D36249E23EB94B9F968785E2 /* FamilyActivitySelectionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D404860C3374D95B10A7B7D /* FamilyActivitySelectionStore.swift */; };
+		BCA76A2DC78B4A7F8C18E3F6 /* StudlokIdentifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = C84325AEF07D4ABCBFD76125 /* StudlokIdentifiers.swift */; };
+		17D1C3649CAF4FB4B2F2CD48 /* SessionReconciler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D6A8370E3AA43C5B4654823 /* SessionReconciler.swift */; };
+		C521851BDCF34EA080A83687 /* FamilyControls.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A7F7193B0EEB40BCB0423654 /* FamilyControls.framework */; };
+		EFBD5FC2644045E5AE6E5301 /* DeviceActivity.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C6DBC9C13019B658005E69D8 /* DeviceActivity.framework */; };
+		E450A820549549D28EA91033 /* ManagedSettings.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C6DBC9D63019B68C005E69D8 /* ManagedSettings.framework */; };
+		B7DB193BF369426888A2F986 /* DeviceActivity.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C6DBC9C13019B658005E69D8 /* DeviceActivity.framework */; };
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
 		331C808B294A63AB00263BE5 /* RunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 331C807B294A618700263BE5 /* RunnerTests.swift */; };
 		3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */; };
@@ -88,6 +113,15 @@
 		3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = AppFrameworkInfo.plist; path = Flutter/AppFrameworkInfo.plist; sourceTree = "<group>"; };
 		74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Runner-Bridging-Header.h"; sourceTree = "<group>"; };
 		74858FAE1ED2DC5600515810 /* AppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		2886BC79F536442D8BC2CB30 /* SharedStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedStore.swift; sourceTree = "<group>"; };
+		2D404860C3374D95B10A7B7D /* FamilyActivitySelectionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FamilyActivitySelectionStore.swift; sourceTree = "<group>"; };
+		A7F7193B0EEB40BCB0423654 /* FamilyControls.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = FamilyControls.framework; path = System/Library/Frameworks/FamilyControls.framework; sourceTree = SDKROOT; };
+		75BDF5E7B7FF4353A7557FEE /* StudlokChannel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StudlokChannel.swift; sourceTree = "<group>"; };
+		17A573CF5A9E4EFEA82F5077 /* StudlokNotifications.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StudlokNotifications.swift; sourceTree = "<group>"; };
+		46210494F242434682ABCC17 /* StudlokBackgroundRefresh.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StudlokBackgroundRefresh.swift; sourceTree = "<group>"; };
+		C84325AEF07D4ABCBFD76125 /* StudlokIdentifiers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StudlokIdentifiers.swift; sourceTree = "<group>"; };
+		8D6A8370E3AA43C5B4654823 /* SessionReconciler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionReconciler.swift; sourceTree = "<group>"; };
+		F3FEB09ED0C744F18AE82DCE /* StudlokWatchdog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StudlokWatchdog.swift; sourceTree = "<group>"; };
 		7AFA3C8E1D35360C0083082E /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Release.xcconfig; path = Flutter/Release.xcconfig; sourceTree = "<group>"; };
 		9740EEB21CF90195004384FC /* Debug.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = Debug.xcconfig; path = Flutter/Debug.xcconfig; sourceTree = "<group>"; };
 		9740EEB31CF90195004384FC /* Generated.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = Generated.xcconfig; path = Flutter/Generated.xcconfig; sourceTree = "<group>"; };
@@ -140,6 +174,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D1BE65B1A77040579A5BC11F /* FamilyControls.framework in Frameworks */,
+				E450A820549549D28EA91033 /* ManagedSettings.framework in Frameworks */,
+				B7DB193BF369426888A2F986 /* DeviceActivity.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -148,6 +185,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				C6DBC9C23019B658005E69D8 /* DeviceActivity.framework in Frameworks */,
+				F87A6DB590A643C6A2D6B916 /* FamilyControls.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -165,6 +203,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				C6DBC9EC3019B6AA005E69D8 /* ManagedSettings.framework in Frameworks */,
+				C521851BDCF34EA080A83687 /* FamilyControls.framework in Frameworks */,
+				EFBD5FC2644045E5AE6E5301 /* DeviceActivity.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -177,6 +217,18 @@
 				331C807B294A618700263BE5 /* RunnerTests.swift */,
 			);
 			path = RunnerTests;
+			sourceTree = "<group>";
+		};
+		A21450A033D74647B07D4061 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				2886BC79F536442D8BC2CB30 /* SharedStore.swift */,
+				2D404860C3374D95B10A7B7D /* FamilyActivitySelectionStore.swift */,
+				C84325AEF07D4ABCBFD76125 /* StudlokIdentifiers.swift */,
+				8D6A8370E3AA43C5B4654823 /* SessionReconciler.swift */,
+				F3FEB09ED0C744F18AE82DCE /* StudlokWatchdog.swift */,
+			);
+			path = Shared;
 			sourceTree = "<group>";
 		};
 		9740EEB11CF90186004384FC /* Flutter */ = {
@@ -194,6 +246,7 @@
 			isa = PBXGroup;
 			children = (
 				9740EEB11CF90186004384FC /* Flutter */,
+				A21450A033D74647B07D4061 /* Shared */,
 				97C146F01CF9000F007C117D /* Runner */,
 				C6DBC9C33019B658005E69D8 /* monitor */,
 				C6DBC9DA3019B68C005E69D8 /* shieldconfig */,
@@ -228,6 +281,9 @@
 				1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */,
 				74858FAE1ED2DC5600515810 /* AppDelegate.swift */,
 				74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */,
+				75BDF5E7B7FF4353A7557FEE /* StudlokChannel.swift */,
+				17A573CF5A9E4EFEA82F5077 /* StudlokNotifications.swift */,
+				46210494F242434682ABCC17 /* StudlokBackgroundRefresh.swift */,
 			);
 			path = Runner;
 			sourceTree = "<group>";
@@ -235,6 +291,7 @@
 		C6DBC9C03019B658005E69D8 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				A7F7193B0EEB40BCB0423654 /* FamilyControls.framework */,
 				C6DBC9C13019B658005E69D8 /* DeviceActivity.framework */,
 				C6DBC9D63019B68C005E69D8 /* ManagedSettings.framework */,
 				C6DBC9D83019B68C005E69D8 /* ManagedSettingsUI.framework */,
@@ -486,6 +543,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				331C808B294A63AB00263BE5 /* RunnerTests.swift in Sources */,
+				C06A5CCE6DD44414B5512A4B /* SharedStore.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -495,6 +553,14 @@
 			files = (
 				74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */,
 				1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */,
+				4DC9C99E3F494AEFA70FF892 /* SharedStore.swift in Sources */,
+				24972A1AF7B14E51B9FA1519 /* FamilyActivitySelectionStore.swift in Sources */,
+				5640E870C6B74C9DB67B8987 /* StudlokChannel.swift in Sources */,
+				89D193FB2C224721A23F0F40 /* StudlokIdentifiers.swift in Sources */,
+				A3F67C12807D4BDEB1DA191D /* SessionReconciler.swift in Sources */,
+				DB69522B60F04F569066357D /* StudlokWatchdog.swift in Sources */,
+				17B6CFDDD2F846F887E4EDBB /* StudlokNotifications.swift in Sources */,
+				DC6E5A25CB094C338D64204B /* StudlokBackgroundRefresh.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -502,6 +568,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CADC14E5F270456D814A8656 /* SharedStore.swift in Sources */,
+				1C624E549A7947A197F1394C /* StudlokIdentifiers.swift in Sources */,
+				D030D5BD54F84D7BB8F7B97C /* FamilyActivitySelectionStore.swift in Sources */,
+				01AB2001D18C4135B7DEAB01 /* SessionReconciler.swift in Sources */,
+				B4EBC7913FB6449880CEB7F1 /* StudlokWatchdog.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -509,6 +580,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0853BE0FE65E43B79E965260 /* SharedStore.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -516,6 +588,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BF91863C75324211AC891D61 /* SharedStore.swift in Sources */,
+				D36249E23EB94B9F968785E2 /* FamilyActivitySelectionStore.swift in Sources */,
+				BCA76A2DC78B4A7F8C18E3F6 /* StudlokIdentifiers.swift in Sources */,
+				17D1C3649CAF4FB4B2F2CD48 /* SessionReconciler.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
