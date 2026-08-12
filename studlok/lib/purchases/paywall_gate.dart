@@ -15,6 +15,10 @@ Future<bool> ensureSessionAllowed(BuildContext context) async {
   if (!context.mounted) return false;
   final result = await RevenueCatUI.presentPaywallIfNeeded(PurchasesConfig.premiumEntitlementId);
   if (result == PaywallResult.purchased || result == PaywallResult.restored) {
+    // Don't rely solely on the passive CustomerInfo listener — it isn't
+    // reliably notified of purchases completed through this native paywall
+    // screen. Force a fresh fetch now so the *next* gate check sees it too.
+    await PurchasesConfig.refreshCustomerInfo();
     return true;
   }
 

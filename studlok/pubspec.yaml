@@ -51,6 +51,27 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.14.4
+  flutter_native_splash: ^2.4.8
+
+# App icon — generated from assets/app_icon.png (the acid-green padlock
+# mark) via `dart run flutter_launcher_icons`. remove_alpha_ios avoids the
+# App Store's "can't be transparent" rejection for the marketing icon.
+flutter_launcher_icons:
+  image_path: "assets/app_icon.png"
+  ios: true
+  android: true
+  remove_alpha_ios: true
+  background_color_ios: "#0D0D0F"
+
+# Splash screen — solid brand background with the same padlock mark
+# centered, generated via `dart run flutter_native_splash`.
+flutter_native_splash:
+  color: "#0D0D0F"
+  image: "assets/app_icon-removebg.png"
+  android_12:
+    color: "#0D0D0F"
+    image: "assets/app_icon-removebg.png"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -62,6 +83,10 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  assets:
+    - assets/app_icon.png
+    - assets/app_icon-removebg.png
 
   # To add assets to your application, add an assets section, like this:
   # assets:

@@ -43,6 +43,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _restorePurchases() async {
     try {
       final info = await Purchases.restorePurchases();
+      await PurchasesConfig.refreshCustomerInfo();
       if (!mounted) return;
       final isPremium = info.entitlements.active.containsKey(PurchasesConfig.premiumEntitlementId);
       ScaffoldMessenger.of(context).showSnackBar(
