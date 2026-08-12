@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../deep_work/deep_work_screen.dart';
 import '../history/session_history_store.dart';
 import '../native/studlok_native_bridge.dart';
+import '../purchases/paywall_gate.dart';
 import '../quiz/quiz_screen.dart';
 import '../settings/settings_screen.dart';
 import '../theme/studlok_theme.dart';
@@ -54,11 +55,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   Future<void> _openDeepWork() async {
+    if (!await ensureSessionAllowed(context)) return;
+    if (!mounted) return;
     await Navigator.of(context).push(MaterialPageRoute(builder: (_) => const DeepWorkScreen()));
     _refresh();
   }
 
   Future<void> _openQuiz() async {
+    if (!await ensureSessionAllowed(context)) return;
+    if (!mounted) return;
     await Navigator.of(context).push(MaterialPageRoute(builder: (_) => const QuizScreen()));
     _refresh();
   }

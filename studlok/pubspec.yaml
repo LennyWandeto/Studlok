@@ -38,6 +38,8 @@ dependencies:
   # Local-only session history log for the dashboard's "Recent Protocols"
   # list (Phase 9) — no native code, just a Flutter plugin.
   shared_preferences: ^2.3.3
+  purchases_flutter: ^10.8.0
+  purchases_ui_flutter: ^10.8.0
 
 dev_dependencies:
   flutter_test:

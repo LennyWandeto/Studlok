@@ -53,4 +53,14 @@ class SessionHistoryStore {
     final updated = [jsonEncode(entry.toJson()), ...raw].take(_maxEntries).toList();
     await prefs.setStringList(_key, updated);
   }
+
+  /// How many sessions were earned today (calendar day, device local time)
+  /// — the free-tier daily cap counts against this.
+  Future<int> countToday() async {
+    final entries = await load();
+    final now = DateTime.now();
+    return entries
+        .where((e) => e.timestamp.year == now.year && e.timestamp.month == now.month && e.timestamp.day == now.day)
+        .length;
+  }
 }
