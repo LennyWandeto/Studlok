@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'app_router.dart';
+import 'auth/auth_config.dart';
 import 'purchases/purchases_config.dart';
 import 'theme/studlok_theme.dart';
 
@@ -14,6 +15,14 @@ Future<void> main() async {
     // that actually locks/unlocks screen time from starting at all.
     debugPrint('[main] PurchasesConfig.initialize failed: $e');
   }
+  try {
+    await AuthConfig.initialize();
+  } catch (e) {
+    // Same reasoning as PurchasesConfig: auth/AI-quiz is an add-on, not
+    // core functionality — a bad config or network issue at launch
+    // shouldn't block the native lock/unlock mechanic from starting.
+    debugPrint('[main] AuthConfig.initialize failed: $e');
+  }
   runApp(const StudlokApp());
 }
 
@@ -25,6 +34,7 @@ class StudlokApp extends StatelessWidget {
     return MaterialApp(
       title: 'Studlok',
       theme: buildStudlokTheme(),
+      debugShowCheckedModeBanner: false,
       home: const AppRouter(),
     );
   }

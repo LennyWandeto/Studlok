@@ -1,7 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:purchases_ui_flutter/purchases_ui_flutter.dart';
 
+import '../auth/account_screen.dart';
+import '../auth/auth_service.dart';
 import '../debug/bridge_debug_page.dart';
 import '../native/studlok_native_bridge.dart';
 import '../purchases/purchases_config.dart';
@@ -19,6 +22,13 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   final _bridge = StudlokNativeBridge();
+
+  Future<void> _openAccount() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const AccountScreen()),
+    );
+    if (mounted) setState(() {});
+  }
 
   Future<void> _manageLockedApps() async {
     try {
@@ -64,6 +74,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: ListView(
         children: [
           ListTile(
+            leading: const Icon(Icons.person_outline, color: StudlokColors.accent),
+            title: const Text('Account'),
+            subtitle: Text(AuthService.instance.currentUser?.email ?? 'Not signed in'),
+            onTap: _openAccount,
+          ),
+          const Divider(),
+          ListTile(
             leading: const Icon(Icons.lock_outline, color: StudlokColors.accent),
             title: const Text('Manage locked apps'),
             subtitle: const Text('Change which apps and categories are shielded'),
@@ -81,14 +98,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
             title: const Text('Restore purchases'),
             onTap: _restorePurchases,
           ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.bug_report_outlined, color: StudlokColors.dimWhite),
-            title: const Text('Debug tools'),
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const BridgeDebugPage()),
+          // Debug tools call bridge.startSession() directly, bypassing the
+          // paywall/daily cap entirely — must never be reachable in a
+          // release build (App Store / TestFlight).
+          if (kDebugMode) ...[
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.bug_report_outlined, color: StudlokColors.dimWhite),
+              title: const Text('Debug tools'),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const BridgeDebugPage()),
+              ),
             ),
-          ),
+          ],
         ],
       ),
     );

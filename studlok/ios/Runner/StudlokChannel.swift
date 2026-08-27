@@ -98,6 +98,8 @@ enum StudlokChannel {
             }
         case "debugBackgroundRefreshStatus":
             result(StudlokBackgroundRefresh.debugStatus())
+        case "debugShieldStatus":
+            result(debugShieldStatus())
         default:
             log("unimplemented method: \(call.method)")
             result(FlutterMethodNotImplemented)
@@ -277,6 +279,40 @@ enum StudlokChannel {
             "now": ISO8601DateFormatter().string(from: Date()),
         ]
         log("debugScheduleInfo -> \(info)")
+        return info
+    }
+
+    // MARK: - debugShieldStatus (diagnostic: what's actually configured on
+    // the ManagedSettingsStore, as opposed to what's saved in
+    // FamilyActivitySelectionStore — these are two different things, and a
+    // selection existing doesn't guarantee the shield was actually applied)
+
+    private static func debugShieldStatus() -> [String: Any] {
+        let selection = FamilyActivitySelectionStore.load()
+        let store = ManagedSettingsStore(named: .studlok)
+
+        let categoryPolicyDescription: String
+        switch store.shield.applicationCategories {
+        case .none:
+            categoryPolicyDescription = "nil"
+        case .some(.all(except: let exceptions)):
+            categoryPolicyDescription = "all except \(exceptions.count)"
+        case .some(.specific(let categories, except: let exceptions)):
+            categoryPolicyDescription = "specific(\(categories.count)) except \(exceptions.count)"
+        case .some:
+            categoryPolicyDescription = "unknown policy case"
+        }
+
+        let info: [String: Any] = [
+            "authorizationStatus": AuthorizationCenter.shared.authorizationStatus.studlokWireValue,
+            "selectionApplicationTokens": selection.applicationTokens.count,
+            "selectionCategoryTokens": selection.categoryTokens.count,
+            "selectionWebDomainTokens": selection.webDomainTokens.count,
+            "shieldApplicationsCount": store.shield.applications?.count ?? 0,
+            "shieldApplicationsIsNil": store.shield.applications == nil,
+            "shieldApplicationCategories": categoryPolicyDescription,
+        ]
+        log("debugShieldStatus -> \(info)")
         return info
     }
 }

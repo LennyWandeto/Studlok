@@ -195,6 +195,12 @@ class StudlokNativeBridge {
   /// debug why intervalDidEnd isn't firing.
   Future<Map<Object?, Object?>> debugScheduleInfo() => _invokeMap('debugScheduleInfo');
 
+  /// Debug check: what's actually configured on the ManagedSettingsStore
+  /// (the thing that determines whether apps actually get shielded) versus
+  /// what's saved in the FamilyActivitySelection — a saved selection
+  /// doesn't guarantee the shield itself was applied.
+  Future<Map<Object?, Object?>> debugShieldStatus() => _invokeMap('debugShieldStatus');
+
   /// Manually triggers the same reconcile-a-stale-session logic that
   /// normally runs on app foreground/launch. Returns true if a stale
   /// session was actually found and cleared.

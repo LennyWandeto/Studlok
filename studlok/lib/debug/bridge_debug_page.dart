@@ -121,6 +121,13 @@ class _BridgeDebugPageState extends State<BridgeDebugPage> {
                       child: const Text('Debug Schedule Info'),
                     ),
                     ElevatedButton(
+                      onPressed: () => _run('debugShieldStatus', () async {
+                        final status = await _bridge.debugShieldStatus();
+                        _appendLog('  $status');
+                      }),
+                      child: const Text('Shield Status'),
+                    ),
+                    ElevatedButton(
                       onPressed: () => _run('debugReconcileNow', () async {
                         final reconciled = await _bridge.debugReconcileNow();
                         _appendLog('  reconciled=$reconciled');
