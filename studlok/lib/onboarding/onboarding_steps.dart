@@ -7,10 +7,15 @@ import '../design/studlok_colors.dart';
 import '../design/studlok_spacing.dart';
 import '../design/studlok_typography.dart';
 import 'onboarding_view_model.dart';
+import 'widgets/curved_gpa_picker.dart';
 
 /// Content only — no Scaffold, no CTA button. Each of these is one page in
 /// OnboardingFlowScreen's PageView; the shared shell owns the progress
 /// dots and the single, consistently-positioned CTA below.
+///
+/// Copy discipline: every screen leads with what it wants in the headline,
+/// not buried in the body. Body text stays short — a permission screen in
+/// particular should be legible in a glance, not read like a paragraph.
 class Welcome1Content extends StatelessWidget {
   const Welcome1Content({super.key});
 
@@ -28,9 +33,7 @@ class Welcome1Content extends StatelessWidget {
           ),
           const SizedBox(height: StudlokSpacing.lg),
           Text(
-            'Studlok locks the apps that eat your time until you finish a Deep '
-            'Work session or a Quiz. No willpower required — just a real reason '
-            'to put your phone down.',
+            'Distracting apps lock. Finish a session, earn them back.',
             textAlign: TextAlign.center,
             style: StudlokTypography.body.copyWith(color: StudlokColors.textSecondary),
           ),
@@ -41,9 +44,9 @@ class Welcome1Content extends StatelessWidget {
 }
 
 const _howItWorks = [
-  ('01', 'Pick what to lock', 'Choose the apps or categories that eat your time. They lock immediately.'),
-  ('02', 'Earn your way back in', 'Complete a Deep Work session or pass a Quiz — whichever fits the moment.'),
-  ('03', 'Unlock, then re-lock', 'Your apps open for exactly as long as you earned, then lock again automatically.'),
+  ('01', 'Pick what to lock', 'Choose the apps that eat your time.'),
+  ('02', 'Earn your way back in', 'Finish a Deep Work session or a Quiz.'),
+  ('03', 'Unlock, then re-lock', 'Apps open, then lock again automatically.'),
 ];
 
 class Welcome2Content extends StatelessWidget {
@@ -101,11 +104,8 @@ class _StepRow extends StatelessWidget {
   }
 }
 
-const _focusOptions = ['Exams', 'Classes', 'Research', 'Personal projects', 'General focus'];
-const _hourOptions = [1, 2, 3, 4];
-
-class PersonalizationContent extends StatelessWidget {
-  const PersonalizationContent({super.key});
+class PersonalizationBasicsContent extends StatelessWidget {
+  const PersonalizationBasicsContent({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -116,38 +116,37 @@ class PersonalizationContent extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: StudlokSpacing.xl),
-          Text('MAKE IT YOURS.', style: StudlokTypography.headline.copyWith(color: StudlokColors.textPrimary)),
-          const SizedBox(height: StudlokSpacing.xxxl),
-          Text(
-            'What are you locking in for?',
-            style: StudlokTypography.subhead.copyWith(color: StudlokColors.textPrimary, fontSize: 18),
-          ),
-          const SizedBox(height: StudlokSpacing.md),
-          Wrap(
-            spacing: StudlokSpacing.sm,
-            runSpacing: StudlokSpacing.sm,
+          Text('WHERE ARE YOU\nSTARTING FROM?', style: StudlokTypography.headline.copyWith(color: StudlokColors.textPrimary)),
+          const SizedBox(height: StudlokSpacing.xxl),
+          _GpaStepper(label: 'Current GPA', value: viewModel.currentGpa, onChanged: viewModel.setCurrentGpa),
+          const SizedBox(height: StudlokSpacing.xxl),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              for (final option in _focusOptions)
-                _Chip(label: option, selected: viewModel.focus == option, onTap: () => viewModel.selectFocus(option)),
+              Text(
+                'Hours a week you want to lock in',
+                style: StudlokTypography.subhead.copyWith(color: StudlokColors.textPrimary, fontSize: 16),
+              ),
+              Text(
+                '${viewModel.weeklyStudyHours.round()}h',
+                style: StudlokTypography.headline.copyWith(color: StudlokColors.accent, fontSize: 22),
+              ),
             ],
           ),
-          const SizedBox(height: StudlokSpacing.xxxl),
-          Text(
-            'How many hours a day?',
-            style: StudlokTypography.subhead.copyWith(color: StudlokColors.textPrimary, fontSize: 18),
-          ),
-          const SizedBox(height: StudlokSpacing.md),
-          Wrap(
-            spacing: StudlokSpacing.sm,
-            runSpacing: StudlokSpacing.sm,
-            children: [
-              for (final hours in _hourOptions)
-                _Chip(
-                  label: hours == 4 ? '4+ hrs' : '$hours hr${hours == 1 ? '' : 's'}',
-                  selected: viewModel.dailyGoalHours == hours,
-                  onTap: () => viewModel.selectHours(hours),
-                ),
-            ],
+          SliderTheme(
+            data: SliderTheme.of(context).copyWith(
+              activeTrackColor: StudlokColors.accent,
+              inactiveTrackColor: StudlokColors.surface,
+              thumbColor: StudlokColors.accent,
+              overlayColor: StudlokColors.accent.withValues(alpha: 0.15),
+            ),
+            child: Slider(
+              value: viewModel.weeklyStudyHours,
+              min: 1,
+              max: 40,
+              divisions: 39,
+              onChanged: viewModel.setWeeklyStudyHours,
+            ),
           ),
         ],
       ),
@@ -155,28 +154,123 @@ class PersonalizationContent extends StatelessWidget {
   }
 }
 
-class _Chip extends StatelessWidget {
-  const _Chip({required this.label, required this.selected, required this.onTap});
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
+class PersonalizationTargetContent extends StatelessWidget {
+  const PersonalizationTargetContent({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final viewModel = context.watch<OnboardingViewModel>();
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: StudlokSpacing.xl),
+          child: Column(
+            children: [
+              Text('DREAM BIG.', style: StudlokTypography.headline.copyWith(color: StudlokColors.textPrimary)),
+              const SizedBox(height: StudlokSpacing.sm),
+              Text(
+                'What GPA are you chasing?',
+                textAlign: TextAlign.center,
+                style: StudlokTypography.body.copyWith(color: StudlokColors.textSecondary),
+              ),
+            ],
+          ),
+        ),
+        // Unpadded — the ruler wants the full screen width, not the
+        // screen's usual text margins.
+        CurvedGpaPicker(
+          min: viewModel.currentGpa,
+          value: viewModel.targetGpa,
+          onChanged: viewModel.setTargetGpa,
+        ),
+      ],
+    );
+  }
+}
+
+class PersonalizationRevealContent extends StatelessWidget {
+  const PersonalizationRevealContent({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final viewModel = context.watch<OnboardingViewModel>();
+    final gap = (viewModel.targetGpa - viewModel.currentGpa).toStringAsFixed(1);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: StudlokSpacing.xl),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(LucideIcons.sparkles, size: 56, color: StudlokColors.accent),
+          const SizedBox(height: StudlokSpacing.xl),
+          Text(
+            'GAINING +$gap IS NOT\nUNREALISTIC AT ALL.',
+            textAlign: TextAlign.center,
+            style: StudlokTypography.headline.copyWith(color: StudlokColors.textPrimary),
+          ),
+          const SizedBox(height: StudlokSpacing.lg),
+          Text(
+            'Show up daily and let Studlok hold the line.',
+            textAlign: TextAlign.center,
+            style: StudlokTypography.body.copyWith(color: StudlokColors.textSecondary),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _GpaStepper extends StatelessWidget {
+  const _GpaStepper({required this.label, required this.value, required this.onChanged});
+
+  final String label;
+  final double value;
+  final ValueChanged<double> onChanged;
+  static const _min = 0.0;
+  static const _max = 4.0;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(label, style: StudlokTypography.subhead.copyWith(color: StudlokColors.textPrimary, fontSize: 18)),
+        ),
+        _StepperButton(icon: Icons.remove, onTap: value > _min ? () => onChanged(value - 0.1) : null),
+        SizedBox(
+          width: 64,
+          child: Text(
+            value.toStringAsFixed(1),
+            textAlign: TextAlign.center,
+            style: StudlokTypography.headline.copyWith(color: StudlokColors.accent, fontSize: 26),
+          ),
+        ),
+        _StepperButton(icon: Icons.add, onTap: value < _max ? () => onChanged(value + 0.1) : null),
+      ],
+    );
+  }
+}
+
+class _StepperButton extends StatelessWidget {
+  const _StepperButton({required this.icon, required this.onTap});
+
+  final IconData icon;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final disabled = onTap == null;
     return StudlokPressFeedback(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+        width: 36,
+        height: 36,
+        alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: selected ? StudlokColors.accent : StudlokColors.surface,
+          color: StudlokColors.surface,
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: selected ? StudlokColors.accent : Colors.transparent, width: 1.5),
         ),
-        child: Text(
-          label,
-          style: TextStyle(color: selected ? Colors.black : StudlokColors.textPrimary, fontWeight: FontWeight.w700),
-        ),
+        child: Icon(icon, size: 18, color: disabled ? StudlokColors.textSecondary.withValues(alpha: 0.4) : StudlokColors.textPrimary),
       ),
     );
   }
@@ -195,17 +289,43 @@ class PermissionPrimingContent extends StatelessWidget {
           const Icon(LucideIcons.lockKeyhole, size: 64, color: StudlokColors.accent),
           const SizedBox(height: StudlokSpacing.xl),
           Text(
-            'EARN YOUR SCROLL.',
+            'ALLOW SCREEN TIME\nACCESS.',
             textAlign: TextAlign.center,
-            style: StudlokTypography.headline.copyWith(color: StudlokColors.accent),
+            style: StudlokTypography.headline.copyWith(color: StudlokColors.textPrimary),
           ),
           const SizedBox(height: StudlokSpacing.lg),
           Text(
-            'Studlok locks the apps that eat your time — Instagram, TikTok, '
-            'whatever pulls you in — until you finish a Deep Work session or a '
-            'Quiz. To do that, it needs Screen Time access from Apple. This is '
-            'what actually applies and lifts the lock; Studlok never sees what '
-            'you do inside those apps.',
+            "This is what lets Studlok lock and unlock apps. It never sees "
+            'what you do inside them.',
+            textAlign: TextAlign.center,
+            style: StudlokTypography.body.copyWith(color: StudlokColors.textSecondary),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class NotificationPrimingContent extends StatelessWidget {
+  const NotificationPrimingContent({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: StudlokSpacing.xl),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(LucideIcons.bell, size: 64, color: StudlokColors.accent),
+          const SizedBox(height: StudlokSpacing.xl),
+          Text(
+            'ALLOW\nNOTIFICATIONS.',
+            textAlign: TextAlign.center,
+            style: StudlokTypography.headline.copyWith(color: StudlokColors.textPrimary),
+          ),
+          const SizedBox(height: StudlokSpacing.lg),
+          Text(
+            "We'll let you know when a session ends and your apps re-lock.",
             textAlign: TextAlign.center,
             style: StudlokTypography.body.copyWith(color: StudlokColors.textSecondary),
           ),
@@ -235,9 +355,7 @@ class AppPickerContent extends StatelessWidget {
           ),
           const SizedBox(height: StudlokSpacing.lg),
           Text(
-            "Choose the apps or categories that eat your time. They'll lock "
-            'immediately — you unlock them by completing a Deep Work session '
-            'or a Quiz.',
+            'Choose the apps that eat your time. They lock immediately.',
             textAlign: TextAlign.center,
             style: StudlokTypography.body.copyWith(color: StudlokColors.textSecondary),
           ),
@@ -279,7 +397,7 @@ class ConfirmedContent extends StatelessWidget {
           ),
           const SizedBox(height: StudlokSpacing.lg),
           Text(
-            'Complete a session in Studlok to unlock them.',
+            'Finish a session to unlock them.',
             textAlign: TextAlign.center,
             style: StudlokTypography.body.copyWith(color: StudlokColors.textSecondary),
           ),

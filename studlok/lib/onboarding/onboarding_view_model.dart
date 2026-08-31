@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/foundation.dart';
 
 import '../native/studlok_native_bridge.dart';
@@ -7,8 +5,11 @@ import '../native/studlok_native_bridge.dart';
 enum OnboardingStep {
   welcome1,
   welcome2,
-  personalization,
+  personalizationBasics,
+  personalizationTarget,
+  personalizationReveal,
   permissionPriming,
+  notificationPriming,
   appPicker,
   confirmed,
 }
@@ -33,22 +34,33 @@ class OnboardingViewModel extends ChangeNotifier {
   bool isBusy = false;
   String? error;
 
-  // Personalization answers — both optional, never block progress. `focus`
-  // is currently just shown back to the user; `dailyGoalHours` is the one
-  // that has a real effect (Home dashboard's Daily Goal default).
-  String? focus;
-  int? dailyGoalHours;
+  // Personalization answers. `weeklyStudyHours` has a real effect (it sets
+  // the Home dashboard's Daily Goal default, averaged across the week);
+  // `currentGpa`/`targetGpa` power the "dream" moment and the reassurance
+  // screen that follows it — a validating statement, not a fabricated
+  // prediction of any kind.
+  double currentGpa = 3.0;
+  double targetGpa = 3.3;
+  double weeklyStudyHours = 10;
 
   int applicationCount = 0;
   int categoryCount = 0;
 
-  void selectFocus(String value) {
-    focus = value;
+  double _roundTenth(double value) => (value * 10).round() / 10;
+
+  void setCurrentGpa(double value) {
+    currentGpa = _roundTenth(value.clamp(0.0, 4.0));
+    if (targetGpa < currentGpa) targetGpa = currentGpa;
     notifyListeners();
   }
 
-  void selectHours(int value) {
-    dailyGoalHours = value;
+  void setTargetGpa(double value) {
+    targetGpa = _roundTenth(value.clamp(currentGpa, 4.0));
+    notifyListeners();
+  }
+
+  void setWeeklyStudyHours(double value) {
+    weeklyStudyHours = value;
     notifyListeners();
   }
 
@@ -69,9 +81,6 @@ class OnboardingViewModel extends ChangeNotifier {
     try {
       final result = await _bridge.requestAuthorization();
       if (result.status == FamilyControlsAuthorizationStatus.approved) {
-        // Fire-and-forget: notification permission is non-critical, and
-        // asking now avoids interrupting the user with a prompt later.
-        unawaited(_bridge.requestNotificationAuthorization());
         next();
         return true;
       }
@@ -96,6 +105,20 @@ class OnboardingViewModel extends ChangeNotifier {
     return false;
   }
 
+  /// Notification permission is non-critical — the result isn't checked,
+  /// and the flow always advances either way. Denying it just means no
+  /// re-lock/session-end notifications, not a broken app.
+  Future<void> requestNotifications() async {
+    isBusy = true;
+    notifyListeners();
+    try {
+      await _bridge.requestNotificationAuthorization();
+    } finally {
+      isBusy = false;
+      next();
+    }
+  }
+
   Future<void> pickApps() async {
     isBusy = true;
     error = null;
@@ -113,12 +136,11 @@ class OnboardingViewModel extends ChangeNotifier {
     }
   }
 
-  /// Persists the daily-goal answer (if given) and marks onboarding done.
+  /// Persists the daily-goal default (weekly hours, averaged to a daily
+  /// figure) and marks onboarding done.
   Future<void> finish() async {
-    final hours = dailyGoalHours;
-    if (hours != null) {
-      await _bridge.setDailyGoalMinutes(hours * 60);
-    }
+    final dailyMinutes = (weeklyStudyHours * 60 / 7).round();
+    await _bridge.setDailyGoalMinutes(dailyMinutes);
     await _bridge.completeOnboarding();
   }
 }

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:purchases_ui_flutter/purchases_ui_flutter.dart';
 
 import '../design/components/studlok_button.dart';
 import '../design/studlok_colors.dart';
 import '../design/studlok_spacing.dart';
-import '../home/home_screen.dart';
+import '../main_shell.dart';
+import '../purchases/purchases_config.dart';
 import 'onboarding_screens.dart';
 import 'onboarding_steps.dart';
 import 'onboarding_view_model.dart';
@@ -56,7 +58,9 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
     switch (_viewModel.step) {
       case OnboardingStep.welcome1:
       case OnboardingStep.welcome2:
-      case OnboardingStep.personalization:
+      case OnboardingStep.personalizationBasics:
+      case OnboardingStep.personalizationTarget:
+      case OnboardingStep.personalizationReveal:
         _viewModel.next();
       case OnboardingStep.permissionPriming:
         final granted = await _viewModel.requestPermission();
@@ -65,13 +69,23 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
             MaterialPageRoute(builder: (_) => PermissionDeniedScreen(viewModel: _viewModel)),
           );
         }
+      case OnboardingStep.notificationPriming:
+        await _viewModel.requestNotifications();
       case OnboardingStep.appPicker:
         await _viewModel.pickApps();
       case OnboardingStep.confirmed:
         await _viewModel.finish();
+        if (!mounted) return;
+        // A soft, dismissible promo — RevenueCat's own hosted paywall UI,
+        // untouched. Proceeds to Home regardless of outcome; onboarding
+        // never blocks on a purchase, matching the existing free/Pro split.
+        final result = await RevenueCatUI.presentPaywall();
+        if (result == PaywallResult.purchased || result == PaywallResult.restored) {
+          await PurchasesConfig.refreshCustomerInfo();
+        }
         if (mounted) {
           Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (_) => const HomeScreen()),
+            MaterialPageRoute(builder: (_) => const MainShell()),
             (route) => false,
           );
         }
@@ -81,8 +95,11 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
   String _ctaLabel(OnboardingStep step) => switch (step) {
         OnboardingStep.welcome1 => 'CONTINUE',
         OnboardingStep.welcome2 => 'CONTINUE',
-        OnboardingStep.personalization => 'CONTINUE',
+        OnboardingStep.personalizationBasics => 'CONTINUE',
+        OnboardingStep.personalizationTarget => 'CONTINUE',
+        OnboardingStep.personalizationReveal => 'CONTINUE',
         OnboardingStep.permissionPriming => 'CONTINUE',
+        OnboardingStep.notificationPriming => 'CONTINUE',
         OnboardingStep.appPicker => 'CHOOSE APPS',
         OnboardingStep.confirmed => 'GO TO STUDLOK',
       };
@@ -90,8 +107,11 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
   Widget _stepContent(OnboardingStep step) => switch (step) {
         OnboardingStep.welcome1 => const Welcome1Content(),
         OnboardingStep.welcome2 => const Welcome2Content(),
-        OnboardingStep.personalization => const PersonalizationContent(),
+        OnboardingStep.personalizationBasics => const PersonalizationBasicsContent(),
+        OnboardingStep.personalizationTarget => const PersonalizationTargetContent(),
+        OnboardingStep.personalizationReveal => const PersonalizationRevealContent(),
         OnboardingStep.permissionPriming => const PermissionPrimingContent(),
+        OnboardingStep.notificationPriming => const NotificationPrimingContent(),
         OnboardingStep.appPicker => const AppPickerContent(),
         OnboardingStep.confirmed => const ConfirmedContent(),
       };

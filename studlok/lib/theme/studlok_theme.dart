@@ -52,5 +52,21 @@ ThemeData buildStudlokTheme() {
       backgroundColor: StudlokColors.surfaceElevated,
       shape: RoundedRectangleBorder(borderRadius: StudlokRadius.sheetRadius),
     ),
+    navigationBarTheme: NavigationBarThemeData(
+      backgroundColor: StudlokColors.surface,
+      indicatorColor: StudlokColors.accent.withValues(alpha: 0.18),
+      iconTheme: WidgetStateProperty.resolveWith(
+        (states) => IconThemeData(
+          color: states.contains(WidgetState.selected) ? StudlokColors.accent : StudlokColors.textSecondary,
+        ),
+      ),
+      labelTextStyle: WidgetStateProperty.resolveWith(
+        (states) => TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          color: states.contains(WidgetState.selected) ? StudlokColors.accent : StudlokColors.textSecondary,
+        ),
+      ),
+    ),
   );
 }

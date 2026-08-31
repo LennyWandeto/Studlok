@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'app_router_view_model.dart';
-import 'home/home_screen.dart';
+import 'main_shell.dart';
 import 'onboarding/onboarding_flow_screen.dart';
 import 'onboarding/onboarding_view_model.dart';
 import 'splash/splash_screen.dart';
@@ -26,7 +26,7 @@ class AppRouter extends StatelessWidget {
           // picked apps yet resumes directly at the app picker step.
           AppRoute.permissionPriming => const OnboardingFlowScreen(startAt: OnboardingStep.welcome1),
           AppRoute.appPicker => const OnboardingFlowScreen(startAt: OnboardingStep.appPicker),
-          AppRoute.home => const HomeScreen(),
+          AppRoute.home => const MainShell(),
         },
       ),
     );

@@ -1,167 +1,89 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:provider/provider.dart';
 
-import '../deep_work/deep_work_screen.dart';
+import '../design/components/studlok_button.dart';
+import '../design/components/studlok_surface.dart';
+import '../design/studlok_colors.dart';
+import '../design/studlok_spacing.dart';
+import '../design/studlok_typography.dart';
 import '../history/session_history_store.dart';
 import '../native/studlok_native_bridge.dart';
-import '../purchases/paywall_gate.dart';
-import '../purchases/purchases_config.dart';
-import '../quiz/quiz_screen.dart';
-import '../quiz/quiz_source_screen.dart';
-import '../settings/settings_screen.dart';
-import '../theme/studlok_theme.dart';
+import 'home_view_model.dart';
 
-/// Real dashboard (Phase 9) — reads bridge.getSharedState() and the local
-/// session history log instead of showing mockup placeholder values.
+/// Dashboard — tab 1 of the main shell. Pure View: all state comes from
+/// [HomeViewModel]. [onStartSession] switches to the Sessions tab; Home
+/// itself never navigates directly to a session type.
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({super.key, required this.onStartSession});
+
+  final VoidCallback onStartSession;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
-  final _bridge = StudlokNativeBridge();
-  final _historyStore = SessionHistoryStore();
-
-  StudlokSharedState? _state;
-  List<SessionHistoryEntry> _history = const [];
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addObserver(this);
-    _refresh();
-  }
+class _HomeScreenState extends State<HomeScreen> {
+  late final HomeViewModel _viewModel = HomeViewModel();
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
+    _viewModel.dispose();
     super.dispose();
   }
 
   @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      _refresh();
-    }
-  }
-
-  Future<void> _refresh() async {
-    final state = await _bridge.getSharedState();
-    final history = await _historyStore.load();
-    if (!mounted) return;
-    setState(() {
-      _state = state;
-      _history = history;
-    });
-  }
-
-  Future<void> _openDeepWork() async {
-    if (!await ensureSessionAllowed(context)) return;
-    if (!mounted) return;
-    await Navigator.of(context).push(MaterialPageRoute(builder: (_) => const DeepWorkScreen()));
-    _refresh();
-  }
-
-  Future<void> _openQuiz() async {
-    if (!await ensureSessionAllowed(context)) return;
-    if (!mounted) return;
-    // Free-tier path is untouched: only a Pro user ever sees the source
-    // picker (practice bank vs. their own AI-generated quizzes).
-    final isPremium = await PurchasesConfig.isPremium();
-    if (!mounted) return;
-    await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => isPremium ? const QuizSourceScreen() : const QuizScreen()),
-    );
-    _refresh();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final state = _state;
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('STUDLOK'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings_outlined),
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const SettingsScreen()),
+    return ChangeNotifierProvider.value(
+      value: _viewModel,
+      child: Consumer<HomeViewModel>(
+        builder: (context, viewModel, _) {
+          final state = viewModel.state;
+          return Scaffold(
+            backgroundColor: StudlokColors.background,
+            body: SafeArea(
+              child: state == null
+                  ? const Center(child: CircularProgressIndicator(color: StudlokColors.accent))
+                  : RefreshIndicator(
+                      onRefresh: viewModel.refresh,
+                      color: StudlokColors.accent,
+                      backgroundColor: StudlokColors.surface,
+                      child: ListView(
+                        padding: const EdgeInsets.all(StudlokSpacing.xl),
+                        children: [
+                          Text(
+                            'STUDLOK',
+                            style: TextStyle(color: StudlokColors.textSecondary, fontWeight: FontWeight.w700, letterSpacing: 2, fontSize: 13),
+                          ),
+                          const SizedBox(height: StudlokSpacing.xxl),
+                          _HeroNumbers(state: state),
+                          const SizedBox(height: StudlokSpacing.xxl),
+                          _DailyGoalBar(state: state),
+                          const SizedBox(height: StudlokSpacing.xxl),
+                          StudlokButton(label: 'START NEW SESSION', onPressed: widget.onStartSession),
+                          const SizedBox(height: StudlokSpacing.xxxl),
+                          Text(
+                            'RECENT PROTOCOLS',
+                            style: const TextStyle(color: StudlokColors.textPrimary, fontWeight: FontWeight.w800, letterSpacing: 1.1, fontSize: 13),
+                          ),
+                          const SizedBox(height: StudlokSpacing.md),
+                          if (viewModel.history.isEmpty)
+                            const _EmptyHistory()
+                          else
+                            for (final entry in viewModel.history) _ProtocolCard(entry: entry),
+                        ],
+                      ),
+                    ),
             ),
-          ),
-        ],
-      ),
-      body: state == null
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: _refresh,
-              child: ListView(
-                padding: const EdgeInsets.all(24),
-                children: [
-                  _ScrollBankCard(minutes: state.scrollBankMinutes),
-                  const SizedBox(height: 16),
-                  _StreakAndGoalRow(state: state),
-                  const SizedBox(height: 32),
-                  ElevatedButton(
-                    onPressed: _openDeepWork,
-                    child: const Text('START DEEP WORK'),
-                  ),
-                  const SizedBox(height: 12),
-                  ElevatedButton(
-                    onPressed: _openQuiz,
-                    child: const Text('TAKE A QUIZ'),
-                  ),
-                  const SizedBox(height: 32),
-                  const Text(
-                    'RECENT PROTOCOLS',
-                    style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.1),
-                  ),
-                  const SizedBox(height: 12),
-                  if (_history.isEmpty)
-                    const Text(
-                      'No sessions yet — complete a Deep Work session or Quiz to see it here.',
-                      style: TextStyle(color: StudlokColors.dimWhite, fontSize: 14),
-                    )
-                  else
-                    for (final entry in _history) _ProtocolTile(entry: entry),
-                ],
-              ),
-            ),
-    );
-  }
-}
-
-class _ScrollBankCard extends StatelessWidget {
-  const _ScrollBankCard({required this.minutes});
-
-  final int minutes;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: StudlokColors.surface,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('SCROLL BANK', style: TextStyle(color: StudlokColors.dimWhite, fontWeight: FontWeight.w700, letterSpacing: 1.1)),
-          const SizedBox(height: 8),
-          Text(
-            '$minutes min',
-            style: const TextStyle(color: StudlokColors.accent, fontSize: 40, fontWeight: FontWeight.w900),
-          ),
-        ],
+          );
+        },
       ),
     );
   }
 }
 
-class _StreakAndGoalRow extends StatelessWidget {
-  const _StreakAndGoalRow({required this.state});
+class _HeroNumbers extends StatelessWidget {
+  const _HeroNumbers({required this.state});
 
   final StudlokSharedState state;
 
@@ -171,18 +93,94 @@ class _StreakAndGoalRow extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
-          child: _InfoTile(
+          child: _HeroStat(
+            icon: LucideIcons.flame,
             label: 'STREAK',
-            value: state.currentStreak > 0 ? '${state.currentStreak} day${state.currentStreak == 1 ? '' : 's'}' : 'No streak yet',
+            value: '${state.currentStreak}',
+            unit: state.currentStreak == 1 ? 'day' : 'days',
           ),
         ),
-        const SizedBox(width: 16),
+        const SizedBox(width: StudlokSpacing.lg),
         Expanded(
-          child: _InfoTile(
-            label: 'DAILY GOAL',
-            value: state.dailyGoalMinutes > 0
-                ? '${state.dailyProgressMinutes}/${state.dailyGoalMinutes} min'
-                : 'Not set',
+          child: _HeroStat(icon: LucideIcons.zap, label: 'SCROLL BANK', value: '${state.scrollBankMinutes}', unit: 'min'),
+        ),
+      ],
+    );
+  }
+}
+
+class _HeroStat extends StatelessWidget {
+  const _HeroStat({required this.icon, required this.label, required this.value, required this.unit});
+
+  final IconData icon;
+  final String label;
+  final String value;
+  final String unit;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon, size: 14, color: StudlokColors.textSecondary),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: const TextStyle(color: StudlokColors.textSecondary, fontWeight: FontWeight.w700, fontSize: 12, letterSpacing: 1.0),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          children: [
+            Text(value, style: StudlokTypography.display.copyWith(color: StudlokColors.accent, fontSize: 40)),
+            const SizedBox(width: 4),
+            Text(unit, style: StudlokTypography.bodyEmphasis.copyWith(color: StudlokColors.textSecondary, fontSize: 14)),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _DailyGoalBar extends StatelessWidget {
+  const _DailyGoalBar({required this.state});
+
+  final StudlokSharedState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final goal = state.dailyGoalMinutes;
+    final progress = state.dailyProgressMinutes;
+    final fraction = goal > 0 ? (progress / goal).clamp(0.0, 1.0) : 0.0;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'DAILY GOAL',
+              style: TextStyle(color: StudlokColors.textSecondary, fontWeight: FontWeight.w700, fontSize: 12, letterSpacing: 1.0),
+            ),
+            Text(
+              goal > 0 ? '$progress / $goal min' : 'Not set',
+              style: StudlokTypography.body.copyWith(color: StudlokColors.textPrimary, fontSize: 13),
+            ),
+          ],
+        ),
+        const SizedBox(height: StudlokSpacing.sm),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(999),
+          child: LinearProgressIndicator(
+            value: fraction,
+            minHeight: 8,
+            backgroundColor: StudlokColors.surface,
+            valueColor: const AlwaysStoppedAnimation(StudlokColors.accent),
           ),
         ),
       ],
@@ -190,34 +188,8 @@ class _StreakAndGoalRow extends StatelessWidget {
   }
 }
 
-class _InfoTile extends StatelessWidget {
-  const _InfoTile({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: StudlokColors.surface,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: const TextStyle(color: StudlokColors.dimWhite, fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 1.1)),
-          const SizedBox(height: 6),
-          Text(value, style: const TextStyle(color: StudlokColors.white, fontSize: 17, fontWeight: FontWeight.w800)),
-        ],
-      ),
-    );
-  }
-}
-
-class _ProtocolTile extends StatelessWidget {
-  const _ProtocolTile({required this.entry});
+class _ProtocolCard extends StatelessWidget {
+  const _ProtocolCard({required this.entry});
 
   final SessionHistoryEntry entry;
 
@@ -225,14 +197,26 @@ class _ProtocolTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final isQuiz = entry.type == 'quiz';
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        tileColor: StudlokColors.surface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        leading: Icon(isQuiz ? Icons.quiz_outlined : Icons.timer_outlined, color: StudlokColors.accent),
-        title: Text(entry.label, style: const TextStyle(color: StudlokColors.white, fontWeight: FontWeight.w700)),
-        subtitle: Text(_formatTimestamp(entry.timestamp), style: const TextStyle(color: StudlokColors.dimWhite)),
-        trailing: Text('+${entry.minutesEarned}m', style: const TextStyle(color: StudlokColors.accent, fontWeight: FontWeight.w800)),
+      padding: const EdgeInsets.only(bottom: StudlokSpacing.sm),
+      child: StudlokSurface(
+        padding: const EdgeInsets.all(StudlokSpacing.md),
+        child: Row(
+          children: [
+            Icon(isQuiz ? LucideIcons.bookOpen : LucideIcons.zap, color: StudlokColors.accent),
+            const SizedBox(width: StudlokSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(entry.label, style: StudlokTypography.bodyEmphasis.copyWith(color: StudlokColors.textPrimary, fontSize: 14)),
+                  const SizedBox(height: 2),
+                  Text(_formatTimestamp(entry.timestamp), style: StudlokTypography.caption.copyWith(color: StudlokColors.textSecondary)),
+                ],
+              ),
+            ),
+            Text('+${entry.minutesEarned}m', style: StudlokTypography.bodyEmphasis.copyWith(color: StudlokColors.accent, fontSize: 14)),
+          ],
+        ),
       ),
     );
   }
@@ -244,5 +228,29 @@ class _ProtocolTile extends StatelessWidget {
     if (diff.inHours < 1) return '${diff.inMinutes}m ago';
     if (diff.inDays < 1) return '${diff.inHours}h ago';
     return '${diff.inDays}d ago';
+  }
+}
+
+class _EmptyHistory extends StatelessWidget {
+  const _EmptyHistory();
+
+  @override
+  Widget build(BuildContext context) {
+    return StudlokSurface(
+      padding: const EdgeInsets.all(StudlokSpacing.xl),
+      child: Column(
+        children: [
+          const Icon(LucideIcons.target, size: 32, color: StudlokColors.textSecondary),
+          const SizedBox(height: StudlokSpacing.md),
+          Text('Nothing locked in yet', style: StudlokTypography.bodyEmphasis.copyWith(color: StudlokColors.textPrimary)),
+          const SizedBox(height: StudlokSpacing.xs),
+          Text(
+            'Start a session below to earn your first minutes.',
+            textAlign: TextAlign.center,
+            style: StudlokTypography.body.copyWith(color: StudlokColors.textSecondary, fontSize: 13),
+          ),
+        ],
+      ),
+    );
   }
 }
