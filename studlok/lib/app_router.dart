@@ -1,58 +1,34 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import 'app_router_view_model.dart';
 import 'home/home_screen.dart';
-import 'native/studlok_native_bridge.dart';
-import 'onboarding/onboarding_screens.dart';
-
-enum _InitialRoute { permissionPriming, appPicker, home }
+import 'onboarding/onboarding_flow_screen.dart';
+import 'onboarding/onboarding_view_model.dart';
+import 'splash/splash_screen.dart';
 
 /// Decides where a launch lands: onboarding (not yet authorized), straight
 /// to the picker step (authorized but nothing selected), or Home (both
-/// already done — onboarding never re-triggers).
-class AppRouter extends StatefulWidget {
+/// already done — onboarding never re-triggers). Pure View — the actual
+/// decision lives in [AppRouterViewModel].
+class AppRouter extends StatelessWidget {
   const AppRouter({super.key});
 
   @override
-  State<AppRouter> createState() => _AppRouterState();
-}
-
-class _AppRouterState extends State<AppRouter> {
-  final _bridge = StudlokNativeBridge();
-  late final Future<_InitialRoute> _decision = _decideRoute();
-
-  Future<_InitialRoute> _decideRoute() async {
-    final status = await _bridge.getAuthorizationStatus();
-    if (status != FamilyControlsAuthorizationStatus.approved) {
-      return _InitialRoute.permissionPriming;
-    }
-
-    final hasSelection = await _bridge.hasSelectedApps();
-    if (!hasSelection) {
-      return _InitialRoute.appPicker;
-    }
-
-    // Both real conditions are satisfied — record that so future launches
-    // have an explicit record of onboarding having been completed at least
-    // once, even though this routing decision itself is always derived
-    // from live state, not this flag.
-    await _bridge.completeOnboarding();
-    return _InitialRoute.home;
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return FutureBuilder<_InitialRoute>(
-      future: _decision,
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
-        }
-        return switch (snapshot.data!) {
-          _InitialRoute.permissionPriming => const PermissionPrimingScreen(),
-          _InitialRoute.appPicker => const AppPickerStepScreen(),
-          _InitialRoute.home => const HomeScreen(),
-        };
-      },
+    return ChangeNotifierProvider(
+      create: (_) => AppRouterViewModel(),
+      child: Consumer<AppRouterViewModel>(
+        builder: (context, viewModel, _) => switch (viewModel.route) {
+          AppRoute.loading => const SplashScreen(),
+          // A fresh, never-authorized launch gets the full flow starting at
+          // welcome1; a returning launch that's authorized but hasn't
+          // picked apps yet resumes directly at the app picker step.
+          AppRoute.permissionPriming => const OnboardingFlowScreen(startAt: OnboardingStep.welcome1),
+          AppRoute.appPicker => const OnboardingFlowScreen(startAt: OnboardingStep.appPicker),
+          AppRoute.home => const HomeScreen(),
+        },
+      ),
     );
   }
 }

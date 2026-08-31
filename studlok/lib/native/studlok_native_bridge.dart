@@ -166,6 +166,13 @@ class StudlokNativeBridge {
     await _invoke<bool>('completeOnboarding');
   }
 
+  /// Persists the Home dashboard's Daily Goal default — set once, during
+  /// onboarding's personalization step. A stored preference, not part of
+  /// the session/lock scheduling this bridge otherwise wraps.
+  Future<void> setDailyGoalMinutes(int minutes) async {
+    await _invoke<bool>('setDailyGoalMinutes', {'dailyGoalMinutes': minutes});
+  }
+
   /// Opens the Settings app (UIApplication.openSettingsURLString) — used
   /// when the user has denied Family Controls access and needs to enable it
   /// manually, since there's no supported way to re-prompt after a denial.

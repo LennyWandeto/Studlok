@@ -4,7 +4,9 @@ import '../deep_work/deep_work_screen.dart';
 import '../history/session_history_store.dart';
 import '../native/studlok_native_bridge.dart';
 import '../purchases/paywall_gate.dart';
+import '../purchases/purchases_config.dart';
 import '../quiz/quiz_screen.dart';
+import '../quiz/quiz_source_screen.dart';
 import '../settings/settings_screen.dart';
 import '../theme/studlok_theme.dart';
 
@@ -64,7 +66,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Future<void> _openQuiz() async {
     if (!await ensureSessionAllowed(context)) return;
     if (!mounted) return;
-    await Navigator.of(context).push(MaterialPageRoute(builder: (_) => const QuizScreen()));
+    // Free-tier path is untouched: only a Pro user ever sees the source
+    // picker (practice bank vs. their own AI-generated quizzes).
+    final isPremium = await PurchasesConfig.isPremium();
+    if (!mounted) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => isPremium ? const QuizSourceScreen() : const QuizScreen()),
+    );
     _refresh();
   }
 

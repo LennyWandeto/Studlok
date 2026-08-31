@@ -1,18 +1,14 @@
 import 'package:flutter/material.dart';
 
-/// "Earn Your Scroll" brand: near-black background, acid-green accent, bold
-/// condensed-feeling type. No custom font is bundled yet — heavy weights +
-/// tight letter-spacing approximate the condensed look with system fonts
-/// until a real display font asset is added.
-class StudlokColors {
-  StudlokColors._();
+import '../design/studlok_colors.dart';
+import '../design/studlok_radius.dart';
 
-  static const background = Color(0xFF0D0D0F);
-  static const surface = Color(0xFF1A1A1D);
-  static const accent = Color(0xFFCCFF00);
-  static const white = Colors.white;
-  static const dimWhite = Color(0xFFB3B3B3);
-}
+// Re-exported so every existing `import '../theme/studlok_theme.dart'` and
+// `StudlokColors.xxx` call site keeps resolving unchanged — the color
+// system's real home is now lib/design/, this file just assembles ThemeData
+// from it. See lib/design/ for the rest of the token system (typography,
+// spacing, radius) and lib/design/components/ for the shared widgets.
+export '../design/studlok_colors.dart';
 
 ThemeData buildStudlokTheme() {
   final base = ThemeData(
@@ -26,6 +22,7 @@ ThemeData buildStudlokTheme() {
       surface: StudlokColors.background,
       primary: StudlokColors.accent,
       onPrimary: Colors.black,
+      error: StudlokColors.warning,
     ),
   );
 
@@ -45,11 +42,15 @@ ThemeData buildStudlokTheme() {
         foregroundColor: Colors.black,
         minimumSize: const Size.fromHeight(52),
         textStyle: const TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.1),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        shape: RoundedRectangleBorder(borderRadius: StudlokRadius.buttonRadius),
       ),
     ),
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(foregroundColor: StudlokColors.accent),
+    ),
+    bottomSheetTheme: const BottomSheetThemeData(
+      backgroundColor: StudlokColors.surfaceElevated,
+      shape: RoundedRectangleBorder(borderRadius: StudlokRadius.sheetRadius),
     ),
   );
 }

@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../history/session_history_store.dart';
 import '../native/studlok_native_bridge.dart';
 import '../theme/studlok_theme.dart';
+import 'course_material_repository.dart';
 import 'quiz_bank.dart';
 
 const int _questionsPerQuiz = 5;
@@ -13,21 +14,35 @@ const int _secondsPerQuestion = 20;
 const int _quizSessionMinutes = 15;
 const double _passThreshold = 0.7;
 
-/// Draws a fresh random set of questions from the hardcoded bank each time.
-List<QuizQuestion> _drawQuestions() {
+/// Draws the question set for a session. An injected [source] (a Pro user's
+/// own generated quiz) is used in full, shuffled; with none given, this
+/// draws a fresh random 5 from the hardcoded bank exactly as before — the
+/// free-tier path is untouched.
+List<QuizQuestion> _drawQuestions(List<QuizQuestion>? source) {
+  if (source != null) {
+    return List<QuizQuestion>.from(source)..shuffle(Random());
+  }
   final pool = List<QuizQuestion>.from(studlokQuizBank)..shuffle(Random());
   return pool.take(_questionsPerQuiz).toList();
 }
 
 class QuizScreen extends StatefulWidget {
-  const QuizScreen({super.key});
+  const QuizScreen({super.key, this.questions, this.generatedQuizId});
+
+  /// A Pro user's own AI-generated question set. Null means "the hardcoded
+  /// bank" — the default, unchanged path every free user still takes.
+  final List<QuizQuestion>? questions;
+
+  /// The source generated_quizzes row id, carried through only so the
+  /// result screen can log the attempt. Null for the hardcoded bank.
+  final String? generatedQuizId;
 
   @override
   State<QuizScreen> createState() => _QuizScreenState();
 }
 
 class _QuizScreenState extends State<QuizScreen> {
-  late final List<QuizQuestion> _questions = _drawQuestions();
+  late final List<QuizQuestion> _questions = _drawQuestions(widget.questions);
   int _index = 0;
   int _correctCount = 0;
   int? _selectedOption;
@@ -85,7 +100,12 @@ class _QuizScreenState extends State<QuizScreen> {
   void _finish() {
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
-        builder: (_) => QuizResultScreen(correctCount: _correctCount, total: _questions.length),
+        builder: (_) => QuizResultScreen(
+          correctCount: _correctCount,
+          total: _questions.length,
+          questions: widget.questions,
+          generatedQuizId: widget.generatedQuizId,
+        ),
       ),
     );
   }
@@ -179,10 +199,21 @@ class _OptionButton extends StatelessWidget {
 }
 
 class QuizResultScreen extends StatefulWidget {
-  const QuizResultScreen({super.key, required this.correctCount, required this.total});
+  const QuizResultScreen({
+    super.key,
+    required this.correctCount,
+    required this.total,
+    this.questions,
+    this.generatedQuizId,
+  });
 
   final int correctCount;
   final int total;
+
+  /// Carried through so "Try again" re-enters the same source (bank or
+  /// generated quiz) instead of always falling back to the hardcoded bank.
+  final List<QuizQuestion>? questions;
+  final String? generatedQuizId;
 
   @override
   State<QuizResultScreen> createState() => _QuizResultScreenState();
@@ -191,6 +222,7 @@ class QuizResultScreen extends StatefulWidget {
 class _QuizResultScreenState extends State<QuizResultScreen> {
   final _bridge = StudlokNativeBridge();
   final _historyStore = SessionHistoryStore();
+  final _courseMaterialRepository = CourseMaterialRepository.instance;
 
   bool get _passed => widget.correctCount / widget.total >= _passThreshold;
 
@@ -213,6 +245,14 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
         minutesEarned: _quizSessionMinutes,
         timestamp: DateTime.now(),
       ));
+      final generatedQuizId = widget.generatedQuizId;
+      if (generatedQuizId != null) {
+        unawaited(_courseMaterialRepository.recordAttempt(
+          quizId: generatedQuizId,
+          correctCount: widget.correctCount,
+          totalCount: widget.total,
+        ));
+      }
       if (!mounted) return;
       setState(() => _claimed = true);
     } on StudlokNativeBridgeException catch (e) {
@@ -225,7 +265,9 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
 
   void _retry() {
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const QuizScreen()),
+      MaterialPageRoute(
+        builder: (_) => QuizScreen(questions: widget.questions, generatedQuizId: widget.generatedQuizId),
+      ),
     );
   }
 

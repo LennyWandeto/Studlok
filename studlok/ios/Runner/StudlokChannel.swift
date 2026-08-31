@@ -79,6 +79,28 @@ enum StudlokChannel {
             SharedStore.save(state)
             log("completeOnboarding: saved")
             result(true)
+        case "setDailyGoalMinutes":
+            // Onboarding's personalization step is the only writer today —
+            // a plain stored preference, not part of the lock/shield
+            // scheduling logic above.
+            guard
+                let args = call.arguments as? [String: Any],
+                let minutes = args["dailyGoalMinutes"] as? Int,
+                minutes >= 0
+            else {
+                log("setDailyGoalMinutes: invalid arguments: \(String(describing: call.arguments))")
+                result(FlutterError(
+                    code: "invalid_arguments",
+                    message: "setDailyGoalMinutes requires a non-negative Int dailyGoalMinutes.",
+                    details: nil
+                ))
+                return
+            }
+            var goalState = SharedStore.load()
+            goalState.dailyGoalMinutes = minutes
+            SharedStore.save(goalState)
+            log("setDailyGoalMinutes: saved \(minutes)")
+            result(true)
         case "openSystemSettings":
             guard let url = URL(string: UIApplication.openSettingsURLString) else {
                 result(false)

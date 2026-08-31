@@ -1,0 +1,7 @@
+Clash Display — Indian Type Foundry / Fontshare
+
+Free for personal and commercial use, including in a shipping app,
+per Fontshare's Free Font License. Source: https://www.fontshare.com/fonts/clash-display
+
+Weights bundled: Regular (400), Medium (500), Semibold (600), Bold (700).
+Fetched directly from Fontshare's CDN on 2026-08-30.

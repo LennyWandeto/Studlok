@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../native/studlok_native_bridge.dart';
+import '../quiz/quiz_source_screen.dart';
+import 'design_system_preview_page.dart';
 
 /// Debug harness from Phase 5: exercises every StudlokNativeBridge method by
 /// hand. Moved off the app's main entry point in Phase 7 (reachable from
@@ -161,6 +163,25 @@ class _BridgeDebugPageState extends State<BridgeDebugPage> {
                         _appendLog('  $status');
                       }),
                       child: const Text('BG Refresh Status'),
+                    ),
+                    // Navigation shortcut only — skips the real isPremium()
+                    // check so the Pro quiz picker/upload flow can be QA'd
+                    // without a real subscription. Grants nothing; unlike
+                    // the buttons above it never touches startSession.
+                    ElevatedButton(
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const QuizSourceScreen()),
+                      ),
+                      child: const Text('Preview: Choose a Quiz (Pro)'),
+                    ),
+                    // Design revamp, Part 1 — literal look at the new
+                    // colors/type/buttons/surfaces before any real screen
+                    // adopts them.
+                    ElevatedButton(
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const DesignSystemPreviewPage()),
+                      ),
+                      child: const Text('Preview: Design System'),
                     ),
                   ],
                 ),
