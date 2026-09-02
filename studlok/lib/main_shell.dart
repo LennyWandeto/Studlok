@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import 'home/home_screen.dart';
+import 'native/studlok_native_bridge.dart';
 import 'progress/progress_screen.dart';
+import 'quiz/quiz_launch.dart';
 import 'sessions/sessions_screen.dart';
 import 'settings/settings_screen.dart';
 
@@ -16,10 +18,40 @@ class MainShell extends StatefulWidget {
   State<MainShell> createState() => _MainShellState();
 }
 
-class _MainShellState extends State<MainShell> {
+class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
+  final _bridge = StudlokNativeBridge();
   int _index = 0;
 
   void _goToSessions() => setState(() => _index = 1);
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _checkPendingDeepLink();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Covers both cases a notification tap can land in: app was fully
+    // closed (this runs once at initState, right after AppRouter routes
+    // here) or backgrounded (this runs on resume).
+    if (state == AppLifecycleState.resumed) _checkPendingDeepLink();
+  }
+
+  Future<void> _checkPendingDeepLink() async {
+    final state = await _bridge.getSharedState();
+    if (state.pendingDeepLink != 'quiz') return;
+    await _bridge.clearPendingDeepLink();
+    if (!mounted) return;
+    await openQuizFlow(context);
+  }
 
   @override
   Widget build(BuildContext context) {

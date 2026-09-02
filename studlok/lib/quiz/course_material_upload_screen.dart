@@ -2,8 +2,13 @@ import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
-import '../theme/studlok_theme.dart';
+import '../design/components/studlok_button.dart';
+import '../design/components/studlok_surface.dart';
+import '../design/studlok_colors.dart';
+import '../design/studlok_spacing.dart';
+import '../design/studlok_typography.dart';
 import 'course_material_repository.dart';
 import 'quiz_screen.dart';
 
@@ -141,10 +146,11 @@ class _CourseMaterialUploadScreenState extends State<CourseMaterialUploadScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: StudlokColors.background,
       appBar: AppBar(title: const Text('UPLOAD NOTES')),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(StudlokSpacing.xl),
           child: switch (_stage) {
             _Stage.idle => _buildIdle(),
             _Stage.uploading => _buildBusy('Uploading your notes…'),
@@ -162,29 +168,29 @@ class _CourseMaterialUploadScreenState extends State<CourseMaterialUploadScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text(
+        Text(
           'Turn your notes into a quiz.',
-          style: TextStyle(color: StudlokColors.white, fontSize: 26, fontWeight: FontWeight.w900, letterSpacing: 1.1),
+          style: StudlokTypography.headline.copyWith(color: StudlokColors.textPrimary, fontSize: 26),
         ),
-        const SizedBox(height: 8),
-        const Text(
+        const SizedBox(height: StudlokSpacing.sm),
+        Text(
           'A photo or PDF of your notes, turned into a set of questions you can earn scroll time with.',
-          style: TextStyle(color: StudlokColors.dimWhite, fontSize: 15, height: 1.4),
+          style: StudlokTypography.body.copyWith(color: StudlokColors.textSecondary),
         ),
-        const SizedBox(height: 32),
+        const SizedBox(height: StudlokSpacing.xxl),
         if (file != null) ...[
           _FileTile(file: file, sizeBytes: _pickedBytes?.length ?? 0),
-          const SizedBox(height: 16),
-          ElevatedButton(onPressed: _generate, child: const Text('GENERATE QUIZ')),
-          const SizedBox(height: 8),
-          TextButton(onPressed: _pickFile, child: const Text('Choose a different file')),
+          const SizedBox(height: StudlokSpacing.lg),
+          StudlokButton(label: 'GENERATE QUIZ', onPressed: _generate),
+          const SizedBox(height: StudlokSpacing.sm),
+          StudlokButton(label: 'Choose a different file', tier: StudlokButtonTier.tertiary, onPressed: _pickFile),
         ] else
-          ElevatedButton(onPressed: _pickFile, child: const Text('CHOOSE A FILE')),
+          StudlokButton(label: 'CHOOSE A FILE', onPressed: _pickFile),
         const Spacer(),
         Text(
           'PDF, JPG, PNG, or HEIC — up to 20MB.',
           textAlign: TextAlign.center,
-          style: const TextStyle(color: StudlokColors.dimWhite, fontSize: 12),
+          style: StudlokTypography.caption.copyWith(color: StudlokColors.textSecondary),
         ),
       ],
     );
@@ -195,8 +201,8 @@ class _CourseMaterialUploadScreenState extends State<CourseMaterialUploadScreen>
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         const CircularProgressIndicator(color: StudlokColors.accent),
-        const SizedBox(height: 20),
-        Text(label, style: const TextStyle(color: StudlokColors.dimWhite, fontSize: 15)),
+        const SizedBox(height: StudlokSpacing.lg),
+        Text(label, style: StudlokTypography.body.copyWith(color: StudlokColors.textSecondary)),
       ],
     );
   }
@@ -217,25 +223,26 @@ class _CourseMaterialUploadScreenState extends State<CourseMaterialUploadScreen>
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const Spacer(),
-          const Icon(Icons.check_circle_outline, size: 72, color: StudlokColors.accent),
-          const SizedBox(height: 24),
+          const Icon(LucideIcons.circleCheck, size: 64, color: StudlokColors.accent),
+          const SizedBox(height: StudlokSpacing.xl),
           Text(
             '${quiz.questions.length} QUESTIONS READY',
             textAlign: TextAlign.center,
-            style: const TextStyle(color: StudlokColors.white, fontSize: 24, fontWeight: FontWeight.w900, letterSpacing: 1.1),
+            style: StudlokTypography.headline.copyWith(color: StudlokColors.textPrimary, fontSize: 24),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: StudlokSpacing.sm),
           Text(
             'From "${quiz.title}"',
             textAlign: TextAlign.center,
-            style: const TextStyle(color: StudlokColors.dimWhite, fontSize: 15),
+            style: StudlokTypography.body.copyWith(color: StudlokColors.textSecondary),
           ),
           const Spacer(),
-          ElevatedButton(onPressed: _takeQuizNow, child: const Text('TAKE THIS QUIZ NOW')),
-          const SizedBox(height: 8),
-          TextButton(
+          StudlokButton(label: 'TAKE THIS QUIZ NOW', onPressed: _takeQuizNow),
+          const SizedBox(height: StudlokSpacing.sm),
+          StudlokButton(
+            label: "Done — I'll take it later",
+            tier: StudlokButtonTier.tertiary,
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Done — I\'ll take it later'),
           ),
         ],
       ),
@@ -248,20 +255,20 @@ class _CourseMaterialUploadScreenState extends State<CourseMaterialUploadScreen>
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const Spacer(),
-        const Icon(Icons.error_outline, size: 56, color: Colors.redAccent),
-        const SizedBox(height: 20),
+        const Icon(LucideIcons.triangleAlert, size: 56, color: StudlokColors.warning),
+        const SizedBox(height: StudlokSpacing.lg),
         Text(
           _errorMessage ?? 'Something went wrong.',
           textAlign: TextAlign.center,
-          style: const TextStyle(color: StudlokColors.white, fontSize: 16, height: 1.4),
+          style: StudlokTypography.body.copyWith(color: StudlokColors.textPrimary),
         ),
         const Spacer(),
-        ElevatedButton(
+        StudlokButton(
+          label: failedAt == _FailedAt.upload ? 'TRY UPLOAD AGAIN' : 'TRY AGAIN',
           onPressed: _generate,
-          child: Text(failedAt == _FailedAt.upload ? 'TRY UPLOAD AGAIN' : 'TRY AGAIN'),
         ),
-        const SizedBox(height: 8),
-        TextButton(onPressed: _chooseDifferentFile, child: const Text('Choose a different file')),
+        const SizedBox(height: StudlokSpacing.sm),
+        StudlokButton(label: 'Choose a different file', tier: StudlokButtonTier.tertiary, onPressed: _chooseDifferentFile),
       ],
     );
   }
@@ -274,8 +281,8 @@ class _FileTile extends StatelessWidget {
   final int sizeBytes;
 
   IconData get _icon => switch (file.extension?.toLowerCase()) {
-        'pdf' => Icons.picture_as_pdf_outlined,
-        _ => Icons.image_outlined,
+        'pdf' => LucideIcons.fileText,
+        _ => LucideIcons.image,
       };
 
   String get _sizeLabel {
@@ -286,16 +293,11 @@ class _FileTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: StudlokColors.surface,
-        borderRadius: BorderRadius.circular(12),
-      ),
+    return StudlokSurface(
       child: Row(
         children: [
           Icon(_icon, color: StudlokColors.accent),
-          const SizedBox(width: 12),
+          const SizedBox(width: StudlokSpacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -303,10 +305,10 @@ class _FileTile extends StatelessWidget {
                 Text(
                   file.name,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: StudlokColors.white, fontWeight: FontWeight.w700),
+                  style: StudlokTypography.bodyEmphasis.copyWith(color: StudlokColors.textPrimary),
                 ),
                 const SizedBox(height: 2),
-                Text(_sizeLabel, style: const TextStyle(color: StudlokColors.dimWhite, fontSize: 12)),
+                Text(_sizeLabel, style: StudlokTypography.caption.copyWith(color: StudlokColors.textSecondary)),
               ],
             ),
           ),

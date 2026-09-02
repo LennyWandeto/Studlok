@@ -1,12 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:provider/provider.dart';
+import 'package:purchases_ui_flutter/purchases_ui_flutter.dart';
 
+import '../auth/account_screen.dart';
+import '../auth/auth_service.dart';
+import '../design/components/studlok_chip.dart';
 import '../design/components/studlok_press_feedback.dart';
 import '../design/studlok_colors.dart';
 import '../design/studlok_spacing.dart';
 import '../design/studlok_typography.dart';
+import '../main_shell.dart';
+import '../purchases/purchases_config.dart';
 import 'onboarding_view_model.dart';
+import 'subject_focus_store.dart';
 import 'widgets/curved_gpa_picker.dart';
 
 /// Content only — no Scaffold, no CTA button. Each of these is one page in
@@ -18,6 +25,26 @@ import 'widgets/curved_gpa_picker.dart';
 /// particular should be legible in a glance, not read like a paragraph.
 class Welcome1Content extends StatelessWidget {
   const Welcome1Content({super.key});
+
+  /// Reuses the existing Supabase Apple/Google sign-in screen as-is — no new
+  /// auth UI. A successful sign-in here skips the rest of onboarding
+  /// entirely. What it does NOT yet do: resume at a partially-completed step
+  /// based on that account's own history, or restore anything device-local
+  /// (Screen Time authorization, app selection) — those still get decided
+  /// fresh by AppRouterViewModel on the next cold launch, same as any other
+  /// device. Deliberately deferred, not an oversight.
+  Future<void> _handleSignIn(BuildContext context) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const AccountScreen()),
+    );
+    if (!context.mounted) return;
+    if (AuthService.instance.currentUser != null) {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const MainShell()),
+        (route) => false,
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,6 +63,18 @@ class Welcome1Content extends StatelessWidget {
             'Distracting apps lock. Finish a session, earn them back.',
             textAlign: TextAlign.center,
             style: StudlokTypography.body.copyWith(color: StudlokColors.textSecondary),
+          ),
+          const SizedBox(height: StudlokSpacing.xxl),
+          StudlokPressFeedback(
+            onTap: () => _handleSignIn(context),
+            child: Text(
+              'Already have an account? Sign in',
+              style: StudlokTypography.caption.copyWith(
+                color: StudlokColors.textSecondary,
+                decoration: TextDecoration.underline,
+                decorationColor: StudlokColors.textSecondary,
+              ),
+            ),
           ),
         ],
       ),
@@ -100,6 +139,118 @@ class _StepRow extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// A light, optional step: a fixed set of subject chips (deterministic —
+/// what lets a matching content pack get prioritized later) plus an "Other"
+/// chip that reveals free text for anything not covered. Nothing here is
+/// required to continue; skipping just means the Reveal screen and first
+/// quiz fall back to generic phrasing/content instead of something tailored.
+class SubjectFocusContent extends StatefulWidget {
+  const SubjectFocusContent({super.key});
+
+  @override
+  State<SubjectFocusContent> createState() => _SubjectFocusContentState();
+}
+
+class _SubjectFocusContentState extends State<SubjectFocusContent> {
+  late final TextEditingController _controller;
+  late bool _otherSelected;
+
+  @override
+  void initState() {
+    super.initState();
+    final focus = context.read<OnboardingViewModel>().subjectFocus;
+    _otherSelected = focus != null && focus.category == null;
+    _controller = TextEditingController(text: focus?.customText ?? '');
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _selectCategory(SubjectCategory category) {
+    setState(() => _otherSelected = false);
+    context.read<OnboardingViewModel>().setSubjectCategory(category);
+  }
+
+  void _selectOther() => setState(() => _otherSelected = true);
+
+  /// Not a real upload flow from here — CourseMaterialUploadScreen needs a
+  /// signed-in Supabase session (per the storage/edge-function pipeline),
+  /// and onboarding deliberately never forces sign-in. This just surfaces
+  /// the same Pro paywall every other upload entry point eventually leads
+  /// to; after it closes (bought, restored, or dismissed) the user is still
+  /// right here and can pick a chip or keep typing.
+  Future<void> _showUploadPaywall() async {
+    await RevenueCatUI.presentPaywallIfNeeded(PurchasesConfig.premiumEntitlementId);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final viewModel = context.watch<OnboardingViewModel>();
+    final focus = viewModel.subjectFocus;
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: StudlokSpacing.xl),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: StudlokSpacing.xl),
+          Text('WHAT ARE YOU\nSTUDYING FOR?', style: StudlokTypography.headline.copyWith(color: StudlokColors.textPrimary)),
+          const SizedBox(height: StudlokSpacing.sm),
+          Text(
+            "Pick what's closest — we'll shape your first quiz around it.",
+            style: StudlokTypography.body.copyWith(color: StudlokColors.textSecondary),
+          ),
+          const SizedBox(height: StudlokSpacing.xxl),
+          Wrap(
+            spacing: StudlokSpacing.sm,
+            runSpacing: StudlokSpacing.sm,
+            children: [
+              for (final category in SubjectCategory.values)
+                StudlokChip(
+                  label: category.label,
+                  selected: !_otherSelected && focus?.category == category,
+                  onTap: () => _selectCategory(category),
+                ),
+              StudlokChip(label: 'Other', selected: _otherSelected, onTap: _selectOther),
+            ],
+          ),
+          if (_otherSelected) ...[
+            const SizedBox(height: StudlokSpacing.lg),
+            TextField(
+              controller: _controller,
+              style: StudlokTypography.body.copyWith(color: StudlokColors.textPrimary),
+              cursorColor: StudlokColors.accent,
+              decoration: InputDecoration(
+                hintText: 'e.g. Organic Chemistry',
+                hintStyle: StudlokTypography.body.copyWith(color: StudlokColors.textSecondary),
+                filled: true,
+                fillColor: StudlokColors.surface,
+                contentPadding: const EdgeInsets.symmetric(horizontal: StudlokSpacing.lg, vertical: StudlokSpacing.md),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+              ),
+              onChanged: viewModel.setSubjectCustomText,
+            ),
+          ],
+          const SizedBox(height: StudlokSpacing.xxl),
+          StudlokPressFeedback(
+            onTap: _showUploadPaywall,
+            child: Text(
+              'Upload your material instead',
+              style: StudlokTypography.caption.copyWith(
+                color: StudlokColors.textSecondary,
+                decoration: TextDecoration.underline,
+                decorationColor: StudlokColors.textSecondary,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -196,6 +347,10 @@ class PersonalizationRevealContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final viewModel = context.watch<OnboardingViewModel>();
     final gap = (viewModel.targetGpa - viewModel.currentGpa).toStringAsFixed(1);
+    // Subject-aware when there's a clean label to reference (a chip, or
+    // short-enough free text); otherwise this reads exactly as it did
+    // before subject capture existed — no awkward half-personalized copy.
+    final subjectLabel = viewModel.subjectFocus?.displayLabel;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: StudlokSpacing.xl),
       child: Column(
@@ -210,7 +365,9 @@ class PersonalizationRevealContent extends StatelessWidget {
           ),
           const SizedBox(height: StudlokSpacing.lg),
           Text(
-            'Show up daily and let Studlok hold the line.',
+            subjectLabel != null
+                ? 'Show up daily in $subjectLabel and let Studlok hold the line.'
+                : 'Show up daily and let Studlok hold the line.',
             textAlign: TextAlign.center,
             style: StudlokTypography.body.copyWith(color: StudlokColors.textSecondary),
           ),

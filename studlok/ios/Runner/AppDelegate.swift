@@ -1,9 +1,18 @@
 import Flutter
 import UIKit
 import FamilyControls
+import UserNotifications
 
 @main
 @objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
+  // Note: FlutterAppDelegate already conforms to UNUserNotificationCenterDelegate
+  // and already implements the two methods below — that's why they're
+  // `override`, and why this class doesn't redeclare the protocol itself.
+  // No Flutter plugin in this app currently depends on the base
+  // implementations (no firebase_messaging/flutter_local_notifications etc.),
+  // so these fully replace them rather than calling super — the completion
+  // handler contract only allows one call, and forwarding to an unknown
+  // super implementation risks a double call if that ever changes.
   override func application(
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
@@ -12,10 +21,42 @@ import FamilyControls
     logSharedStoreRoundTrip()
     #endif
     observeDidBecomeActiveForSessionReconciliation()
+    UNUserNotificationCenter.current().delegate = self
     // Must register before this method returns, and exactly once per launch.
     StudlokBackgroundRefresh.register()
     StudlokBackgroundRefresh.scheduleNext()
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  }
+
+  /// Show the banner even if Studlok happens to already be in the
+  /// foreground when a notification fires — the default with no delegate
+  /// set is to deliver it silently.
+  override func userNotificationCenter(
+    _ center: UNUserNotificationCenter,
+    willPresent notification: UNNotification,
+    withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+  ) {
+    completionHandler([.banner, .sound])
+  }
+
+  /// The tap handler that makes the shield-dismiss notification actually
+  /// deep-link somewhere, working around ShieldActionExtension's own
+  /// inability to do so directly (see that file). Sets a shared-state flag;
+  /// MainShell reads and clears it on launch/resume, since this fires from
+  /// both a cold launch (app wasn't running) and a resume (it was
+  /// backgrounded) depending on what state the app was in when tapped.
+  override func userNotificationCenter(
+    _ center: UNUserNotificationCenter,
+    didReceive response: UNNotificationResponse,
+    withCompletionHandler completionHandler: @escaping () -> Void
+  ) {
+    if response.notification.request.identifier == StudlokNotificationIdentifiers.shieldDismissQuizPrompt {
+      var state = SharedStore.load()
+      state.pendingDeepLink = "quiz"
+      SharedStore.save(state)
+      print("[AppDelegate] notification tapped: pendingDeepLink=quiz")
+    }
+    completionHandler()
   }
 
   /// Fallback for DeviceActivityMonitor's intervalDidEnd being unreliable for

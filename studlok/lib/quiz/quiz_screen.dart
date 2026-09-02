@@ -2,10 +2,15 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../design/components/studlok_button.dart';
+import '../design/studlok_colors.dart';
+import '../design/studlok_spacing.dart';
+import '../design/studlok_typography.dart';
 import '../history/session_history_store.dart';
 import '../native/studlok_native_bridge.dart';
-import '../theme/studlok_theme.dart';
 import 'course_material_repository.dart';
 import 'quiz_bank.dart';
 
@@ -79,6 +84,12 @@ class _QuizScreenState extends State<QuizScreen> {
     _timer?.cancel();
     final question = _questions[_index];
     final isCorrect = optionIndex != null && optionIndex == question.correctIndex;
+    HapticFeedback.mediumImpact();
+    if (!isCorrect) {
+      // A second, heavier beat right after — makes "wrong" read distinctly
+      // different from "right" by feel alone, not just by color.
+      Future.delayed(const Duration(milliseconds: 90), () => HapticFeedback.heavyImpact());
+    }
     setState(() {
       _selectedOption = optionIndex ?? -1;
       if (isCorrect) _correctCount += 1;
@@ -113,40 +124,66 @@ class _QuizScreenState extends State<QuizScreen> {
   @override
   Widget build(BuildContext context) {
     final question = _questions[_index];
+    final urgent = _secondsLeft <= 5 && _selectedOption == null;
     return Scaffold(
-      appBar: AppBar(title: Text('QUIZ — QUESTION ${_index + 1}/${_questions.length}')),
+      backgroundColor: StudlokColors.background,
+      appBar: AppBar(
+        title: Text(
+          'QUESTION ${_index + 1} OF ${_questions.length}',
+          style: const TextStyle(fontSize: 14, letterSpacing: 0.5),
+        ),
+      ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(StudlokSpacing.xl),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              LinearProgressIndicator(
-                value: _secondsLeft / _secondsPerQuestion,
-                backgroundColor: StudlokColors.surface,
-                color: StudlokColors.accent,
-                minHeight: 4,
+              Row(
+                children: [
+                  Expanded(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(999),
+                      child: TweenAnimationBuilder<double>(
+                        tween: Tween(begin: 1, end: _secondsLeft / _secondsPerQuestion),
+                        duration: const Duration(milliseconds: 300),
+                        builder: (context, value, _) => LinearProgressIndicator(
+                          value: value,
+                          minHeight: 6,
+                          backgroundColor: StudlokColors.surface,
+                          valueColor: AlwaysStoppedAnimation(urgent ? StudlokColors.warning : StudlokColors.accent),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: StudlokSpacing.md),
+                  Text(
+                    '${_secondsLeft}s',
+                    style: StudlokTypography.bodyEmphasis.copyWith(
+                      color: urgent ? StudlokColors.warning : StudlokColors.textSecondary,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 8),
-              Text('$_secondsLeft s', style: const TextStyle(color: StudlokColors.dimWhite, fontSize: 13)),
-              const SizedBox(height: 24),
+              const SizedBox(height: StudlokSpacing.xxl),
               Text(
                 question.subject.toUpperCase(),
-                style: const TextStyle(color: StudlokColors.accent, fontWeight: FontWeight.w900, letterSpacing: 1.1),
+                style: const TextStyle(color: StudlokColors.accent, fontWeight: FontWeight.w700, letterSpacing: 1.0, fontSize: 12),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: StudlokSpacing.sm),
               Text(
                 question.question,
-                style: const TextStyle(color: StudlokColors.white, fontSize: 22, fontWeight: FontWeight.w800),
+                style: StudlokTypography.headline.copyWith(color: StudlokColors.textPrimary, fontSize: 24),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: StudlokSpacing.xxl),
               for (var i = 0; i < question.options.length; i++) ...[
-                _OptionButton(
+                _OptionCard(
                   text: question.options[i],
                   state: _optionState(i, question.correctIndex),
                   onTap: () => _lockAnswer(i),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: StudlokSpacing.sm),
               ],
             ],
           ),
@@ -159,14 +196,14 @@ class _QuizScreenState extends State<QuizScreen> {
     if (_selectedOption == null) return _OptionVisualState.neutral;
     if (optionIndex == correctIndex) return _OptionVisualState.correct;
     if (optionIndex == _selectedOption) return _OptionVisualState.incorrect;
-    return _OptionVisualState.neutral;
+    return _OptionVisualState.dimmed;
   }
 }
 
-enum _OptionVisualState { neutral, correct, incorrect }
+enum _OptionVisualState { neutral, correct, incorrect, dimmed }
 
-class _OptionButton extends StatelessWidget {
-  const _OptionButton({required this.text, required this.state, required this.onTap});
+class _OptionCard extends StatelessWidget {
+  const _OptionCard({required this.text, required this.state, required this.onTap});
 
   final String text;
   final _OptionVisualState state;
@@ -174,25 +211,53 @@ class _OptionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color background = switch (state) {
-      _OptionVisualState.correct => StudlokColors.accent,
-      _OptionVisualState.incorrect => Colors.redAccent,
-      _OptionVisualState.neutral => StudlokColors.surface,
+    final (Color background, Color foreground, Color border, IconData? icon) = switch (state) {
+      _OptionVisualState.correct => (StudlokColors.accent, Colors.black, StudlokColors.accent, LucideIcons.check),
+      _OptionVisualState.incorrect => (StudlokColors.warning.withValues(alpha: 0.16), StudlokColors.textPrimary, StudlokColors.warning, LucideIcons.x),
+      _OptionVisualState.dimmed => (StudlokColors.surface, StudlokColors.textSecondary, Colors.transparent, null),
+      _OptionVisualState.neutral => (StudlokColors.surface, StudlokColors.textPrimary, Colors.transparent, null),
     };
-    final Color foreground = state == _OptionVisualState.correct ? Colors.black : StudlokColors.white;
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: onTap,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: background,
-          foregroundColor: foreground,
-          minimumSize: const Size.fromHeight(52),
-          alignment: Alignment.centerLeft,
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          textStyle: const TextStyle(fontWeight: FontWeight.w700),
+
+    return GestureDetector(
+      onTap: state == _OptionVisualState.neutral ? onTap : null,
+      child: AnimatedScale(
+        scale: state == _OptionVisualState.correct || state == _OptionVisualState.incorrect ? 1.02 : 1.0,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOut,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          decoration: BoxDecoration(
+            color: background,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: border, width: 1.5),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  text,
+                  style: TextStyle(
+                    color: foreground,
+                    fontFamily: 'ClashDisplay',
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
+                  ),
+                ),
+              ),
+              if (icon != null) ...[
+                const SizedBox(width: StudlokSpacing.sm),
+                AnimatedScale(
+                  scale: 1.0,
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.elasticOut,
+                  child: Icon(icon, color: foreground, size: 20),
+                ),
+              ],
+            ],
+          ),
         ),
-        child: Text(text),
       ),
     );
   }
@@ -274,62 +339,48 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: StudlokColors.background,
       appBar: AppBar(title: const Text('RESULTS')),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(StudlokSpacing.xl),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const Spacer(),
               Icon(
-                _passed ? Icons.check_circle_outline : Icons.close,
-                size: 72,
-                color: _passed ? StudlokColors.accent : Colors.redAccent,
+                _passed ? LucideIcons.circleCheck : LucideIcons.circleX,
+                size: 64,
+                color: _passed ? StudlokColors.accent : StudlokColors.warning,
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: StudlokSpacing.xl),
               Text(
                 '${widget.correctCount}/${widget.total} CORRECT',
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: StudlokColors.white, fontSize: 26, fontWeight: FontWeight.w900, letterSpacing: 1.1),
+                style: StudlokTypography.headline.copyWith(color: StudlokColors.textPrimary),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: StudlokSpacing.sm),
               Text(
                 _passed
                     ? 'You passed. Claim your scroll time.'
                     : 'Need ${(_passThreshold * 100).round()}% to earn scroll time — give it another go.',
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: StudlokColors.dimWhite, fontSize: 15),
+                style: StudlokTypography.body.copyWith(color: StudlokColors.textSecondary),
               ),
               if (_error != null) ...[
-                const SizedBox(height: 16),
-                Text(_error!, textAlign: TextAlign.center, style: const TextStyle(color: Colors.redAccent)),
+                const SizedBox(height: StudlokSpacing.lg),
+                Text(_error!, textAlign: TextAlign.center, style: const TextStyle(color: StudlokColors.warning)),
               ],
               const Spacer(),
               if (_passed) ...[
                 if (_claimed)
-                  ElevatedButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('BACK TO HOME'),
-                  )
+                  StudlokButton(label: 'BACK TO HOME', onPressed: () => Navigator.of(context).pop())
                 else
-                  ElevatedButton(
-                    onPressed: _claiming ? null : _claim,
-                    child: _claiming
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
-                          )
-                        : const Text('CLAIM SCROLL TIME'),
-                  ),
+                  StudlokButton(label: 'CLAIM SCROLL TIME', onPressed: _claiming ? null : _claim),
               ] else ...[
-                ElevatedButton(onPressed: _retry, child: const Text('TRY AGAIN')),
-                const SizedBox(height: 8),
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('BACK TO HOME'),
-                ),
+                StudlokButton(label: 'TRY AGAIN', onPressed: _retry),
+                const SizedBox(height: StudlokSpacing.sm),
+                StudlokButton(label: 'BACK TO HOME', tier: StudlokButtonTier.tertiary, onPressed: () => Navigator.of(context).pop()),
               ],
             ],
           ),

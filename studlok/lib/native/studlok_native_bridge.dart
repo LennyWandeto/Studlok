@@ -59,6 +59,7 @@ class StudlokSharedState {
     required this.dailyGoalMinutes,
     required this.dailyProgressMinutes,
     required this.onboardingComplete,
+    this.pendingDeepLink,
   });
 
   factory StudlokSharedState._fromWire(Map<Object?, Object?> map) {
@@ -73,6 +74,7 @@ class StudlokSharedState {
       dailyGoalMinutes: (map['dailyGoalMinutes'] as num).toInt(),
       dailyProgressMinutes: (map['dailyProgressMinutes'] as num).toInt(),
       onboardingComplete: map['onboardingComplete'] as bool? ?? false,
+      pendingDeepLink: map['pendingDeepLink'] as String?,
     );
   }
 
@@ -84,6 +86,11 @@ class StudlokSharedState {
   final int dailyGoalMinutes;
   final int dailyProgressMinutes;
   final bool onboardingComplete;
+
+  /// Set natively when a notification carrying a deep-link payload is
+  /// tapped (currently only "quiz", from the shield-dismiss prompt). Read
+  /// and cleared by MainShell — see clearPendingDeepLink.
+  final String? pendingDeepLink;
 }
 
 /// Thrown for any failure talking to the native Family Controls bridge —
@@ -171,6 +178,13 @@ class StudlokNativeBridge {
   /// the session/lock scheduling this bridge otherwise wraps.
   Future<void> setDailyGoalMinutes(int minutes) async {
     await _invoke<bool>('setDailyGoalMinutes', {'dailyGoalMinutes': minutes});
+  }
+
+  /// Clears StudlokSharedState.pendingDeepLink once MainShell has acted on
+  /// it, so the same notification tap doesn't re-trigger navigation on a
+  /// later resume.
+  Future<void> clearPendingDeepLink() async {
+    await _invoke<bool>('clearPendingDeepLink');
   }
 
   /// Opens the Settings app (UIApplication.openSettingsURLString) — used

@@ -1,10 +1,12 @@
 import 'package:flutter/foundation.dart';
 
 import '../native/studlok_native_bridge.dart';
+import 'subject_focus_store.dart';
 
 enum OnboardingStep {
   welcome1,
   welcome2,
+  subjectFocus,
   personalizationBasics,
   personalizationTarget,
   personalizationReveal,
@@ -22,9 +24,12 @@ enum OnboardingStep {
 class OnboardingViewModel extends ChangeNotifier {
   OnboardingViewModel({required OnboardingStep startAt, StudlokNativeBridge? bridge})
       : _bridge = bridge ?? StudlokNativeBridge(),
-        _stepIndex = OnboardingStep.values.indexOf(startAt);
+        _stepIndex = OnboardingStep.values.indexOf(startAt) {
+    _loadSubjectFocus();
+  }
 
   final StudlokNativeBridge _bridge;
+  final _subjectFocusStore = SubjectFocusStore();
 
   int _stepIndex;
   int get stepIndex => _stepIndex;
@@ -45,6 +50,30 @@ class OnboardingViewModel extends ChangeNotifier {
 
   int applicationCount = 0;
   int categoryCount = 0;
+
+  // What they're studying for — stored locally (see SubjectFocusStore), used
+  // to personalize the Reveal screen's copy and, once content packs exist,
+  // to prioritize a matching quiz pack. Loaded async at construction rather
+  // than passed in, so a returning-but-unfinished onboarding run picks up
+  // whatever was already answered without the caller having to know about it.
+  SubjectFocus? subjectFocus;
+
+  Future<void> _loadSubjectFocus() async {
+    subjectFocus = await _subjectFocusStore.load();
+    notifyListeners();
+  }
+
+  Future<void> setSubjectCategory(SubjectCategory category) async {
+    subjectFocus = SubjectFocus(category: category);
+    notifyListeners();
+    await _subjectFocusStore.saveCategory(category);
+  }
+
+  Future<void> setSubjectCustomText(String text) async {
+    subjectFocus = SubjectFocus(customText: text);
+    notifyListeners();
+    await _subjectFocusStore.saveCustomText(text);
+  }
 
   double _roundTenth(double value) => (value * 10).round() / 10;
 
@@ -70,7 +99,21 @@ class OnboardingViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void next() => _goTo(OnboardingStep.values[_stepIndex + 1]);
+  /// Advances one step — except the subject-focus step gets skipped if a
+  /// subject is already stored (a returning, partially-onboarded launch
+  /// that already answered this earlier). Same intent as the app-picker
+  /// skip in AppRouterViewModel: don't re-ask something already known. This
+  /// one lives here rather than at the router level because, unlike the
+  /// Screen Time/app-selection checkpoints, onboarding today always
+  /// restarts a fresh run at welcome1 — there's no earlier "startAt" for a
+  /// single mid-flow step to hook into.
+  void next() {
+    var target = OnboardingStep.values[_stepIndex + 1];
+    if (target == OnboardingStep.subjectFocus && subjectFocus != null) {
+      target = OnboardingStep.values[OnboardingStep.values.indexOf(target) + 1];
+    }
+    _goTo(target);
+  }
 
   /// Returns true on approval (and advances). On denial/failure, returns
   /// false — the caller is responsible for showing the denied-state detour.

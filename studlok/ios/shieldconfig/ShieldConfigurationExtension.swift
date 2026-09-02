@@ -5,7 +5,10 @@
 //  Renders the "Earn Your Scroll" shield. This is a STATIC SNAPSHOT the
 //  system renders once each time a shield is presented — no timers, no
 //  countdown, no live updates while displayed (confirmed platform
-//  constraint, not worth working around).
+//  constraint, not worth working around). It DOES get re-queried, though,
+//  when ShieldActionExtension responds .none instead of .close — that's
+//  how the "check your notifications" copy below gets shown after the
+//  button's been pressed, without the shield ever actually closing.
 //
 
 import ManagedSettings
@@ -13,9 +16,11 @@ import ManagedSettingsUI
 import UIKit
 
 private enum StudlokShieldStyle {
-    // "Earn Your Scroll" brand: near-black/charcoal background, acid-green accent.
-    static let background = UIColor(red: 0.05, green: 0.05, blue: 0.06, alpha: 1)
-    static let accent = UIColor(red: 0.80, green: 1.0, blue: 0.0, alpha: 1)
+    // Exact values from lib/design/studlok_colors.dart (StudlokColors) — the
+    // shield can't import that file, so these are kept numerically identical
+    // by hand. background = #0D0D0F, accent = #CCFF00.
+    static let background = UIColor(red: 13.0 / 255, green: 13.0 / 255, blue: 15.0 / 255, alpha: 1)
+    static let accent = UIColor(red: 204.0 / 255, green: 255.0 / 255, blue: 0.0, alpha: 1)
     static let white = UIColor.white
 }
 
@@ -36,17 +41,34 @@ class ShieldConfigurationExtension: ShieldConfigurationDataSource {
         Self.studlokShield()
     }
 
+    /// How long after a button press the "check your notifications" copy
+    /// stays up before a freshly-shown shield reverts to the normal text.
+    /// Long enough to actually go look; short enough that a shield shown
+    /// minutes later (a new app tap) doesn't confusingly reference a
+    /// notification from an unrelated, much-earlier tap.
+    private static let dismissRequestedWindow: TimeInterval = 120
+
     private static func studlokShield() -> ShieldConfiguration {
         let state = SharedStore.load()
 
-        // Only one subtitle slot exists (ShieldConfiguration.Label is a
-        // single string + single color), so the tagline and the
-        // session-specific line share one Label, both in the accent color.
+        // The brand line leads as the title (in accent, matching every
+        // other screen where "EARN YOUR SCROLL." appears) instead of the
+        // punitive-sounding "ACCESS DENIED" — this shield shows up many
+        // times a day, and a scolding tone wears worse with repetition than
+        // a motivating one.
+        let title: String
         let subtitleText: String
+
         if state.activeSessionType != .none {
-            subtitleText = "EARN YOUR SCROLL.\n\(state.activeSessionLabel) in progress — find Studlok and open it to check in."
+            title = "EARN YOUR SCROLL."
+            subtitleText = "\(state.activeSessionLabel) in progress — open Studlok to check in."
+        } else if let requestedAt = state.shieldDismissRequestedAt,
+                  Date().timeIntervalSince(requestedAt) < dismissRequestedWindow {
+            title = "CHECK YOUR NOTIFICATIONS."
+            subtitleText = "We sent one to start a quiz. Don't see it? Make sure Do Not Disturb or Focus mode is off."
         } else {
-            subtitleText = "EARN YOUR SCROLL.\nComplete a session in Studlok to unlock this. Find the Studlok icon and open it."
+            title = "EARN YOUR SCROLL."
+            subtitleText = "Complete a session in Studlok to unlock this."
         }
 
         return ShieldConfiguration(
@@ -55,9 +77,13 @@ class ShieldConfigurationExtension: ShieldConfigurationDataSource {
             // asset catalog. Swap for a real Studlok lock mark when available.
             icon: UIImage(systemName: "lock.fill")?
                 .withTintColor(StudlokShieldStyle.accent, renderingMode: .alwaysOriginal),
-            title: ShieldConfiguration.Label(text: "ACCESS DENIED", color: StudlokShieldStyle.white),
-            subtitle: ShieldConfiguration.Label(text: subtitleText, color: StudlokShieldStyle.accent),
-            primaryButtonLabel: ShieldConfiguration.Label(text: "OPEN STUDLOK", color: .black),
+            title: ShieldConfiguration.Label(text: title, color: StudlokShieldStyle.accent),
+            subtitle: ShieldConfiguration.Label(text: subtitleText, color: StudlokShieldStyle.white),
+            // "TAKE A QUIZ" — the actual goal state, even though tapping it
+            // only schedules a notification (per ShieldActionExtension,
+            // which responds .none so the shield stays up); the notification
+            // is what actually gets them there.
+            primaryButtonLabel: ShieldConfiguration.Label(text: "TAKE A QUIZ", color: .black),
             primaryButtonBackgroundColor: StudlokShieldStyle.accent
         )
     }

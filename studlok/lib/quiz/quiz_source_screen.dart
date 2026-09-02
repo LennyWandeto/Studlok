@@ -1,6 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
-import '../theme/studlok_theme.dart';
+import '../design/components/studlok_button.dart';
+import '../design/components/studlok_option_card.dart';
+import '../design/components/studlok_press_feedback.dart';
+import '../design/components/studlok_surface.dart';
+import '../design/studlok_colors.dart';
+import '../design/studlok_spacing.dart';
+import '../design/studlok_typography.dart';
 import 'course_material_repository.dart';
 import 'course_material_upload_screen.dart';
 import 'quiz_screen.dart';
@@ -62,25 +69,28 @@ class _QuizSourceScreenState extends State<QuizSourceScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: StudlokColors.background,
       appBar: AppBar(title: const Text('CHOOSE A QUIZ')),
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: _load,
+          color: StudlokColors.accent,
+          backgroundColor: StudlokColors.surface,
           child: ListView(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(StudlokSpacing.xl),
             children: [
-              ElevatedButton(onPressed: _openPracticeBank, child: const Text('PRACTICE BANK')),
-              const SizedBox(height: 4),
-              const Text(
-                'A quick mixed-subject set — always available.',
-                style: TextStyle(color: StudlokColors.dimWhite, fontSize: 13),
+              StudlokOptionCard(
+                icon: LucideIcons.libraryBig,
+                title: 'PRACTICE BANK',
+                subtitle: 'A quick mixed-subject set — always available.',
+                onTap: _openPracticeBank,
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: StudlokSpacing.xxl),
               const Text(
                 'YOUR QUIZZES',
-                style: TextStyle(color: StudlokColors.white, fontWeight: FontWeight.w900, letterSpacing: 1.1),
+                style: TextStyle(color: StudlokColors.textPrimary, fontWeight: FontWeight.w800, letterSpacing: 1.1, fontSize: 13),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: StudlokSpacing.md),
               ..._buildYourQuizzesSection(),
             ],
           ),
@@ -92,35 +102,35 @@ class _QuizSourceScreenState extends State<QuizSourceScreen> {
   List<Widget> _buildYourQuizzesSection() {
     if (_error != null) {
       return [
-        Text(_error!, style: const TextStyle(color: Colors.redAccent, fontSize: 14)),
-        const SizedBox(height: 12),
-        OutlinedButton(onPressed: _load, child: const Text('Try again')),
+        Text(_error!, style: const TextStyle(color: StudlokColors.warning, fontSize: 14)),
+        const SizedBox(height: StudlokSpacing.md),
+        StudlokButton(label: 'TRY AGAIN', tier: StudlokButtonTier.secondary, onPressed: _load),
       ];
     }
 
     final quizzes = _quizzes;
     if (quizzes == null) {
-      return const [Center(child: CircularProgressIndicator(color: StudlokColors.accent))];
+      return const [Padding(padding: EdgeInsets.all(StudlokSpacing.xl), child: Center(child: CircularProgressIndicator(color: StudlokColors.accent)))];
     }
 
     if (quizzes.isEmpty) {
       return [
-        const Text(
-          'Upload a photo or PDF of your notes and we\'ll turn it into a quiz.',
-          style: TextStyle(color: StudlokColors.dimWhite, fontSize: 14, height: 1.4),
+        StudlokOptionCard(
+          icon: LucideIcons.brain,
+          title: 'UPLOAD YOUR NOTES',
+          subtitle: "We'll turn a photo or PDF into a quiz.",
+          onTap: _openUpload,
         ),
-        const SizedBox(height: 16),
-        OutlinedButton(onPressed: _openUpload, child: const Text('UPLOAD YOUR NOTES')),
       ];
     }
 
     return [
       for (final quiz in quizzes) _GeneratedQuizTile(quiz: quiz, onTap: () => _openGeneratedQuiz(quiz)),
-      const SizedBox(height: 8),
+      const SizedBox(height: StudlokSpacing.sm),
       ListTile(
         contentPadding: EdgeInsets.zero,
-        leading: const Icon(Icons.add_circle_outline, color: StudlokColors.accent),
-        title: const Text('Upload new notes', style: TextStyle(color: StudlokColors.white, fontWeight: FontWeight.w700)),
+        leading: const Icon(LucideIcons.plus, color: StudlokColors.accent),
+        title: Text('Upload new notes', style: StudlokTypography.bodyEmphasis.copyWith(color: StudlokColors.textPrimary, fontSize: 15)),
         onTap: _openUpload,
       ),
     ];
@@ -136,22 +146,35 @@ class _GeneratedQuizTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        tileColor: StudlokColors.surface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        leading: const Icon(Icons.quiz_outlined, color: StudlokColors.accent),
-        title: Text(
-          quiz.title,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(color: StudlokColors.white, fontWeight: FontWeight.w700),
-        ),
-        subtitle: Text(_formatDate(quiz.createdAt), style: const TextStyle(color: StudlokColors.dimWhite)),
-        trailing: Text(
-          '${quiz.questions.length}Q',
-          style: const TextStyle(color: StudlokColors.accent, fontWeight: FontWeight.w800),
-        ),
+      padding: const EdgeInsets.only(bottom: StudlokSpacing.sm),
+      child: StudlokPressFeedback(
         onTap: onTap,
+        child: StudlokSurface(
+          child: Row(
+            children: [
+              const Icon(LucideIcons.bookOpen, color: StudlokColors.accent),
+              const SizedBox(width: StudlokSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      quiz.title,
+                      overflow: TextOverflow.ellipsis,
+                      style: StudlokTypography.bodyEmphasis.copyWith(color: StudlokColors.textPrimary, fontSize: 14),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(_formatDate(quiz.createdAt), style: StudlokTypography.caption.copyWith(color: StudlokColors.textSecondary)),
+                  ],
+                ),
+              ),
+              Text(
+                '${quiz.questions.length}Q',
+                style: StudlokTypography.bodyEmphasis.copyWith(color: StudlokColors.accent, fontSize: 14),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

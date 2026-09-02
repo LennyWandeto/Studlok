@@ -23,6 +23,16 @@ struct StudlokSharedState: Codable, Equatable {
     var dailyGoalMinutes: Int
     var dailyProgressMinutes: Int
     var onboardingComplete: Bool
+    /// Set by AppDelegate when a notification with a deep-link payload is
+    /// tapped (currently only "quiz", from the shield-dismiss prompt).
+    /// Flutter reads and clears this on launch/resume — see MainShell.
+    var pendingDeepLink: String?
+    /// Set by ShieldActionExtension the moment it schedules the quiz-prompt
+    /// notification. ShieldConfigurationExtension checks how recent this is
+    /// to decide which shield text to show — see that file. A timestamp
+    /// rather than a bool so it self-expires (a fresh shield shown minutes
+    /// later reverts to the normal copy) without needing an explicit clear.
+    var shieldDismissRequestedAt: Date?
 
     static let empty = StudlokSharedState(
         scrollBankMinutes: 0,
@@ -32,8 +42,18 @@ struct StudlokSharedState: Codable, Equatable {
         currentStreak: 0,
         dailyGoalMinutes: 0,
         dailyProgressMinutes: 0,
-        onboardingComplete: false
+        onboardingComplete: false,
+        pendingDeepLink: nil,
+        shieldDismissRequestedAt: nil
     )
+}
+
+/// Notification identifiers shared across targets: ShieldActionExtension
+/// schedules, AppDelegate (Runner-only) checks on tap. Kept here rather than
+/// in StudlokNotifications.swift (Runner-only) so both sides compile against
+/// the same constant instead of hand-matched string literals.
+enum StudlokNotificationIdentifiers {
+    static let shieldDismissQuizPrompt = "studlok.shield.dismiss.quiz"
 }
 
 enum SharedStore {

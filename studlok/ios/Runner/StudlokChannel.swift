@@ -79,6 +79,12 @@ enum StudlokChannel {
             SharedStore.save(state)
             log("completeOnboarding: saved")
             result(true)
+        case "clearPendingDeepLink":
+            var deepLinkState = SharedStore.load()
+            deepLinkState.pendingDeepLink = nil
+            SharedStore.save(deepLinkState)
+            log("clearPendingDeepLink: cleared")
+            result(true)
         case "setDailyGoalMinutes":
             // Onboarding's personalization step is the only writer today —
             // a plain stored preference, not part of the lock/shield
@@ -385,6 +391,7 @@ private extension StudlokSharedState {
             "dailyGoalMinutes": dailyGoalMinutes,
             "dailyProgressMinutes": dailyProgressMinutes,
             "onboardingComplete": onboardingComplete,
+            "pendingDeepLink": (pendingDeepLink as Any?) ?? NSNull(),
         ]
     }
 }

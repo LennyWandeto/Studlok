@@ -58,6 +58,7 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
     switch (_viewModel.step) {
       case OnboardingStep.welcome1:
       case OnboardingStep.welcome2:
+      case OnboardingStep.subjectFocus:
       case OnboardingStep.personalizationBasics:
       case OnboardingStep.personalizationTarget:
       case OnboardingStep.personalizationReveal:
@@ -95,6 +96,7 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
   String _ctaLabel(OnboardingStep step) => switch (step) {
         OnboardingStep.welcome1 => 'CONTINUE',
         OnboardingStep.welcome2 => 'CONTINUE',
+        OnboardingStep.subjectFocus => 'CONTINUE',
         OnboardingStep.personalizationBasics => 'CONTINUE',
         OnboardingStep.personalizationTarget => 'CONTINUE',
         OnboardingStep.personalizationReveal => 'CONTINUE',
@@ -107,6 +109,7 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
   Widget _stepContent(OnboardingStep step) => switch (step) {
         OnboardingStep.welcome1 => const Welcome1Content(),
         OnboardingStep.welcome2 => const Welcome2Content(),
+        OnboardingStep.subjectFocus => const SubjectFocusContent(),
         OnboardingStep.personalizationBasics => const PersonalizationBasicsContent(),
         OnboardingStep.personalizationTarget => const PersonalizationTargetContent(),
         OnboardingStep.personalizationReveal => const PersonalizationRevealContent(),

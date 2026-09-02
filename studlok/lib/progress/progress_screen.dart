@@ -1,40 +1,133 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:provider/provider.dart';
 
+import '../design/components/studlok_surface.dart';
 import '../design/studlok_colors.dart';
 import '../design/studlok_spacing.dart';
 import '../design/studlok_typography.dart';
+import '../history/protocol_card.dart';
+import 'progress_view_model.dart';
+import 'session_heatmap.dart';
 
-/// Tab 3 — placeholder pending its own design pass (streak heatmap + a
-/// detail list underneath it, per the agreed plan). Deliberately honest
-/// about being unfinished rather than silently shipping a bare screen.
-class ProgressScreen extends StatelessWidget {
+/// Tab 3 — a glanceable heatmap of daily consistency up top (the discipline
+/// view Streak already promises, made visible), then the full session/quiz
+/// history underneath for detail the heatmap alone can't carry.
+class ProgressScreen extends StatefulWidget {
   const ProgressScreen({super.key});
 
   @override
+  State<ProgressScreen> createState() => _ProgressScreenState();
+}
+
+class _ProgressScreenState extends State<ProgressScreen> {
+  late final ProgressViewModel _viewModel = ProgressViewModel();
+
+  @override
+  void dispose() {
+    _viewModel.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: StudlokColors.background,
-      body: SafeArea(
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(StudlokSpacing.xl),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(LucideIcons.chartColumn, size: 40, color: StudlokColors.textSecondary),
-                const SizedBox(height: StudlokSpacing.md),
-                Text('PROGRESS', style: StudlokTypography.headline.copyWith(color: StudlokColors.textPrimary)),
-                const SizedBox(height: StudlokSpacing.sm),
-                Text(
-                  'Streak history and quiz stats — designed next.',
-                  textAlign: TextAlign.center,
-                  style: StudlokTypography.body.copyWith(color: StudlokColors.textSecondary),
-                ),
-              ],
+    return ChangeNotifierProvider.value(
+      value: _viewModel,
+      child: Consumer<ProgressViewModel>(
+        builder: (context, viewModel, _) {
+          return Scaffold(
+            backgroundColor: StudlokColors.background,
+            body: SafeArea(
+              child: !viewModel.loaded
+                  ? const Center(child: CircularProgressIndicator(color: StudlokColors.accent))
+                  : RefreshIndicator(
+                      onRefresh: viewModel.refresh,
+                      color: StudlokColors.accent,
+                      backgroundColor: StudlokColors.surface,
+                      child: ListView(
+                        padding: const EdgeInsets.all(StudlokSpacing.xl),
+                        children: [
+                          Text(
+                            'PROGRESS',
+                            style: StudlokTypography.headline.copyWith(color: StudlokColors.textPrimary, fontSize: 28),
+                          ),
+                          const SizedBox(height: StudlokSpacing.xxl),
+                          Row(
+                            children: [
+                              const Icon(LucideIcons.flame, size: 14, color: StudlokColors.textSecondary),
+                              const SizedBox(width: 6),
+                              const Text(
+                                'CURRENT STREAK',
+                                style: TextStyle(color: StudlokColors.textSecondary, fontWeight: FontWeight.w700, fontSize: 12, letterSpacing: 1.0),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.baseline,
+                            textBaseline: TextBaseline.alphabetic,
+                            children: [
+                              Text(
+                                '${viewModel.currentStreak}',
+                                style: StudlokTypography.display.copyWith(color: StudlokColors.accent, fontSize: 44),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                viewModel.currentStreak == 1 ? 'day' : 'days',
+                                style: StudlokTypography.bodyEmphasis.copyWith(color: StudlokColors.textSecondary, fontSize: 14),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: StudlokSpacing.xxl),
+                          SessionHeatmap(dailyCounts: viewModel.dailyCounts),
+                          const SizedBox(height: StudlokSpacing.xxl),
+                          Row(
+                            children: [
+                              Expanded(child: _StatTile(label: 'SESSIONS', value: '${viewModel.totalSessions}')),
+                              const SizedBox(width: StudlokSpacing.md),
+                              Expanded(child: _StatTile(label: 'MINUTES EARNED', value: '${viewModel.totalMinutesEarned}')),
+                            ],
+                          ),
+                          const SizedBox(height: StudlokSpacing.xxxl),
+                          const Text(
+                            'ALL PROTOCOLS',
+                            style: TextStyle(color: StudlokColors.textPrimary, fontWeight: FontWeight.w800, letterSpacing: 1.1, fontSize: 13),
+                          ),
+                          const SizedBox(height: StudlokSpacing.md),
+                          if (viewModel.history.isEmpty)
+                            const EmptyProtocolHistory()
+                          else
+                            for (final entry in viewModel.history) ProtocolCard(entry: entry),
+                        ],
+                      ),
+                    ),
             ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _StatTile extends StatelessWidget {
+  const _StatTile({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return StudlokSurface(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(color: StudlokColors.textSecondary, fontWeight: FontWeight.w700, fontSize: 11, letterSpacing: 1.0),
           ),
-        ),
+          const SizedBox(height: 4),
+          Text(value, style: StudlokTypography.headline.copyWith(color: StudlokColors.textPrimary, fontSize: 24)),
+        ],
       ),
     );
   }

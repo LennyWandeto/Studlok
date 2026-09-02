@@ -87,7 +87,9 @@ class StudlokButton extends StatelessWidget {
 
   Widget _text() {
     final color = _disabled ? StudlokColors.accent.withValues(alpha: 0.4) : StudlokColors.accent;
-    return Padding(
+    return Container(
+      width: double.infinity,
+      alignment: Alignment.center,
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: _content(color),
     );
