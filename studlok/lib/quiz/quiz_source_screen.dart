@@ -10,6 +10,7 @@ import '../design/studlok_spacing.dart';
 import '../design/studlok_typography.dart';
 import 'course_material_repository.dart';
 import 'course_material_upload_screen.dart';
+import 'pack_picker_screen.dart';
 import 'quiz_screen.dart';
 
 /// Pro-only entry point shown instead of jumping straight into [QuizScreen]:
@@ -48,7 +49,7 @@ class _QuizSourceScreenState extends State<QuizSourceScreen> {
   }
 
   void _openPracticeBank() {
-    Navigator.of(context).push(MaterialPageRoute(builder: (_) => const QuizScreen()));
+    Navigator.of(context).push(MaterialPageRoute(builder: (_) => const PackPickerScreen()));
   }
 
   void _openGeneratedQuiz(GeneratedQuiz quiz) {
@@ -82,7 +83,7 @@ class _QuizSourceScreenState extends State<QuizSourceScreen> {
               StudlokOptionCard(
                 icon: LucideIcons.libraryBig,
                 title: 'PRACTICE BANK',
-                subtitle: 'A quick mixed-subject set — always available.',
+                subtitle: 'Test Prep, CS & Coding, or General Knowledge — always available.',
                 onTap: _openPracticeBank,
               ),
               const SizedBox(height: StudlokSpacing.xxl),

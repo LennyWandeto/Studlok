@@ -90,6 +90,16 @@ class _ProgressScreenState extends State<ProgressScreen> {
                           ),
                           const SizedBox(height: StudlokSpacing.xxxl),
                           const Text(
+                            'PACK MASTERY',
+                            style: TextStyle(color: StudlokColors.textPrimary, fontWeight: FontWeight.w800, letterSpacing: 1.1, fontSize: 13),
+                          ),
+                          const SizedBox(height: StudlokSpacing.md),
+                          for (final (pack, mastered) in viewModel.packMastery) ...[
+                            _PackMasteryRow(name: pack.name, mastered: mastered, total: pack.questions.length),
+                            const SizedBox(height: StudlokSpacing.sm),
+                          ],
+                          const SizedBox(height: StudlokSpacing.xxxl),
+                          const Text(
                             'ALL PROTOCOLS',
                             style: TextStyle(color: StudlokColors.textPrimary, fontWeight: FontWeight.w800, letterSpacing: 1.1, fontSize: 13),
                           ),
@@ -104,6 +114,46 @@ class _ProgressScreenState extends State<ProgressScreen> {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+class _PackMasteryRow extends StatelessWidget {
+  const _PackMasteryRow({required this.name, required this.mastered, required this.total});
+
+  final String name;
+  final int mastered;
+  final int total;
+
+  @override
+  Widget build(BuildContext context) {
+    final progress = total == 0 ? 0.0 : mastered / total;
+    return StudlokSurface(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(name, style: StudlokTypography.bodyEmphasis.copyWith(color: StudlokColors.textPrimary, fontSize: 14)),
+              Text(
+                '$mastered/$total mastered',
+                style: StudlokTypography.caption.copyWith(color: StudlokColors.textSecondary),
+              ),
+            ],
+          ),
+          const SizedBox(height: StudlokSpacing.sm),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 6,
+              backgroundColor: StudlokColors.surfaceElevated,
+              valueColor: const AlwaysStoppedAnimation(StudlokColors.accent),
+            ),
+          ),
+        ],
       ),
     );
   }

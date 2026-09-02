@@ -86,6 +86,38 @@ class AuthService {
   Future<void> signOut() async {
     await _client.auth.signOut();
   }
+
+  /// Permanently deletes the account server-side (the delete-account edge
+  /// function: uploaded files, then the auth user itself, which cascades to
+  /// every DB row tied to it — see supabase/functions/delete-account).
+  /// Signs out locally afterward so the client reflects it immediately
+  /// rather than waiting for the next request to fail with an invalid
+  /// session.
+  Future<void> deleteAccount() async {
+    try {
+      await _client.functions.invoke('delete-account');
+    } on FunctionException catch (e) {
+      throw AuthServiceException(_deleteAccountMessageFor(e));
+    } catch (_) {
+      throw const AuthServiceException("Couldn't reach the server. Check your connection and try again.");
+    }
+    await _client.auth.signOut();
+  }
+
+  String _deleteAccountMessageFor(FunctionException e) {
+    final details = e.details;
+    if (details is Map && details['error'] is String) {
+      return details['error'] as String;
+    }
+    switch (e.status) {
+      case 0:
+        return "Couldn't reach the server. Check your connection and try again.";
+      case 401:
+        return 'Your session expired — sign in again, then retry.';
+      default:
+        return "Couldn't delete your account. Try again.";
+    }
+  }
 }
 
 /// A user-facing auth failure, distinct from raw network/Supabase errors so

@@ -3,11 +3,13 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:provider/provider.dart';
 
 import '../design/components/studlok_button.dart';
+import '../design/components/studlok_surface.dart';
 import '../design/studlok_colors.dart';
 import '../design/studlok_spacing.dart';
 import '../design/studlok_typography.dart';
 import '../history/protocol_card.dart';
 import '../native/studlok_native_bridge.dart';
+import '../onboarding/gpa_goal_store.dart';
 import 'home_view_model.dart';
 
 /// Dashboard — tab 1 of the main shell. Pure View: all state comes from
@@ -58,6 +60,14 @@ class _HomeScreenState extends State<HomeScreen> {
                           _HeroNumbers(state: state),
                           const SizedBox(height: StudlokSpacing.xxl),
                           _DailyGoalBar(state: state),
+                          if (viewModel.gpaGoal != null) ...[
+                            const SizedBox(height: StudlokSpacing.xxl),
+                            _GpaGoalCard(
+                              goal: viewModel.gpaGoal!,
+                              sessionsThisWeek: viewModel.sessionsThisWeek,
+                              masteredCount: viewModel.masteredCount,
+                            ),
+                          ],
                           const SizedBox(height: StudlokSpacing.xxl),
                           StudlokButton(label: 'START NEW SESSION', onPressed: widget.onStartSession),
                           const SizedBox(height: StudlokSpacing.xxxl),
@@ -142,6 +152,51 @@ class _HeroStat extends StatelessWidget {
           ],
         ),
       ],
+    );
+  }
+}
+
+/// Reconnects the onboarding GPA goal (set once on PersonalizationTarget,
+/// previously never referenced again) to ongoing activity. Deliberately
+/// backward-looking — real counts of what's actually been done, not a
+/// projection of GPA outcome — same honesty principle as the Reveal
+/// screen's "gaining +X is not unrealistic" framing: no fabricated link
+/// between locked-in study time and a grade.
+class _GpaGoalCard extends StatelessWidget {
+  const _GpaGoalCard({required this.goal, required this.sessionsThisWeek, required this.masteredCount});
+
+  final GpaGoal goal;
+  final int sessionsThisWeek;
+  final int masteredCount;
+
+  @override
+  Widget build(BuildContext context) {
+    return StudlokSurface(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(LucideIcons.target, size: 14, color: StudlokColors.textSecondary),
+              SizedBox(width: 6),
+              Text(
+                'YOUR GOAL',
+                style: TextStyle(color: StudlokColors.textSecondary, fontWeight: FontWeight.w700, fontSize: 12, letterSpacing: 1.0),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '${goal.currentGpa.toStringAsFixed(1)} → ${goal.targetGpa.toStringAsFixed(1)} GPA',
+            style: StudlokTypography.headline.copyWith(color: StudlokColors.textPrimary, fontSize: 22),
+          ),
+          const SizedBox(height: StudlokSpacing.sm),
+          Text(
+            '$sessionsThisWeek session${sessionsThisWeek == 1 ? '' : 's'} this week · $masteredCount question${masteredCount == 1 ? '' : 's'} mastered',
+            style: StudlokTypography.body.copyWith(color: StudlokColors.textSecondary, fontSize: 13),
+          ),
+        ],
+      ),
     );
   }
 }

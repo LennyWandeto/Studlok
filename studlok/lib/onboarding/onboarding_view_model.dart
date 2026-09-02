@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../native/studlok_native_bridge.dart';
+import 'gpa_goal_store.dart';
 import 'subject_focus_store.dart';
 
 enum OnboardingStep {
@@ -30,6 +31,7 @@ class OnboardingViewModel extends ChangeNotifier {
 
   final StudlokNativeBridge _bridge;
   final _subjectFocusStore = SubjectFocusStore();
+  final _gpaGoalStore = GpaGoalStore();
 
   int _stepIndex;
   int get stepIndex => _stepIndex;
@@ -184,6 +186,10 @@ class OnboardingViewModel extends ChangeNotifier {
   Future<void> finish() async {
     final dailyMinutes = (weeklyStudyHours * 60 / 7).round();
     await _bridge.setDailyGoalMinutes(dailyMinutes);
+    // Previously write-once — set here, shown once on the Reveal screen,
+    // then discarded when this ViewModel was disposed. Persisting it is
+    // what lets Home reference the same goal on an ongoing basis.
+    await _gpaGoalStore.save(GpaGoal(currentGpa: currentGpa, targetGpa: targetGpa));
     await _bridge.completeOnboarding();
   }
 }

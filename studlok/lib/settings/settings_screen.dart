@@ -15,6 +15,7 @@ import '../design/studlok_typography.dart';
 import '../native/studlok_native_bridge.dart';
 import '../purchases/purchases_config.dart';
 import '../quiz/course_material_upload_screen.dart';
+import 'pass_threshold_store.dart';
 import 'settings_view_model.dart';
 
 const _privacyPolicyUrl = 'https://studlok.vercel.app/privacy';
@@ -135,6 +136,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         subtitle: 'Change which apps and categories are shielded',
                         onTap: _manageLockedApps,
                       ),
+                      _PassThresholdRow(
+                        percent: viewModel.passThresholdPercent,
+                        onChanged: viewModel.setPassThreshold,
+                      ),
                     ],
                   ),
                   const SizedBox(height: StudlokSpacing.xl),
@@ -216,6 +221,57 @@ class _SettingsGroup extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// The one settings row that isn't a plain tappable ListTile — an inline
+/// slider, matching onboarding's weekly-hours slider styling but condensed
+/// to fit alongside the plain rows in the same group.
+class _PassThresholdRow extends StatelessWidget {
+  const _PassThresholdRow({required this.percent, required this.onChanged});
+
+  final int percent;
+  final ValueChanged<int> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(LucideIcons.target, color: StudlokColors.accent),
+              const SizedBox(width: StudlokSpacing.md),
+              Expanded(
+                child: Text('Pass threshold', style: StudlokTypography.bodyEmphasis.copyWith(color: StudlokColors.textPrimary, fontSize: 15)),
+              ),
+              Text('$percent%', style: StudlokTypography.bodyEmphasis.copyWith(color: StudlokColors.accent, fontSize: 15)),
+            ],
+          ),
+          Text(
+            'How many correct answers a quiz needs to unlock scroll time.',
+            style: StudlokTypography.caption.copyWith(color: StudlokColors.textSecondary),
+          ),
+          SliderTheme(
+            data: SliderTheme.of(context).copyWith(
+              activeTrackColor: StudlokColors.accent,
+              inactiveTrackColor: StudlokColors.surfaceElevated,
+              thumbColor: StudlokColors.accent,
+              overlayColor: StudlokColors.accent.withValues(alpha: 0.15),
+            ),
+            child: Slider(
+              value: percent.toDouble(),
+              min: PassThresholdStore.minPercent.toDouble(),
+              max: PassThresholdStore.maxPercent.toDouble(),
+              divisions: (PassThresholdStore.maxPercent - PassThresholdStore.minPercent) ~/ 5,
+              onChanged: (value) => onChanged(value.round()),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

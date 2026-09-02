@@ -106,7 +106,36 @@ class _AccountScreenState extends State<AccountScreen> {
           onPressed: _loading ? null : () => _run(_auth.signOut),
           child: const Text('Sign out'),
         ),
+        const SizedBox(height: 12),
+        TextButton(
+          onPressed: _loading ? null : _confirmDeleteAccount,
+          style: TextButton.styleFrom(foregroundColor: Colors.red),
+          child: const Text('Delete account'),
+        ),
       ],
     );
+  }
+
+  Future<void> _confirmDeleteAccount() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete account?'),
+        content: const Text(
+          'This permanently deletes your account, uploaded course materials, and generated quizzes. '
+          'This cannot be undone.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    await _run(_auth.deleteAccount);
   }
 }

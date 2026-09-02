@@ -11,43 +11,54 @@ import '../design/studlok_spacing.dart';
 import '../design/studlok_typography.dart';
 import '../history/session_history_store.dart';
 import '../native/studlok_native_bridge.dart';
+import '../settings/pass_threshold_store.dart';
 import 'course_material_repository.dart';
+import 'question_stats_store.dart';
 import 'quiz_bank.dart';
 
 const int _questionsPerQuiz = 5;
 const int _secondsPerQuestion = 20;
 const int _quizSessionMinutes = 15;
-const double _passThreshold = 0.7;
 
 /// Draws the question set for a session. An injected [source] (a Pro user's
-/// own generated quiz) is used in full, shuffled; with none given, this
-/// draws a fresh random 5 from the hardcoded bank exactly as before — the
-/// free-tier path is untouched.
-List<QuizQuestion> _drawQuestions(List<QuizQuestion>? source) {
+/// own generated quiz) is used in full, shuffled — one-off content, not
+/// worth weighting since it won't be redrawn from again. With no source,
+/// this draws 5 from [pack] weighted toward recently-missed questions (see
+/// QuestionStatsStore) rather than a plain uniform shuffle.
+Future<List<QuizQuestion>> _drawQuestions(List<QuizQuestion>? source, QuestionPack pack) async {
   if (source != null) {
     return List<QuizQuestion>.from(source)..shuffle(Random());
   }
-  final pool = List<QuizQuestion>.from(studlokQuizBank)..shuffle(Random());
-  return pool.take(_questionsPerQuiz).toList();
+  final stats = await QuestionStatsStore().loadAll();
+  return QuestionStatsStore().drawWeighted(pack.questions, _questionsPerQuiz, stats);
 }
 
 class QuizScreen extends StatefulWidget {
-  const QuizScreen({super.key, this.questions, this.generatedQuizId});
+  const QuizScreen({super.key, this.questions, this.generatedQuizId, this.pack});
 
-  /// A Pro user's own AI-generated question set. Null means "the hardcoded
-  /// bank" — the default, unchanged path every free user still takes.
+  /// A Pro user's own AI-generated question set. Null means "hardcoded
+  /// content" — draw from [pack] instead.
   final List<QuizQuestion>? questions;
 
   /// The source generated_quizzes row id, carried through only so the
-  /// result screen can log the attempt. Null for the hardcoded bank.
+  /// result screen can log the attempt. Null for hardcoded content.
   final String? generatedQuizId;
+
+  /// Which hardcoded pack to draw from when [questions] is null. Defaults
+  /// to General Knowledge — the same pool every free user drew from before
+  /// packs existed — so any call site that doesn't specify one keeps
+  /// behaving exactly as it did.
+  final QuestionPack? pack;
+
+  QuestionPack get _resolvedPack => pack ?? generalKnowledgePack;
 
   @override
   State<QuizScreen> createState() => _QuizScreenState();
 }
 
 class _QuizScreenState extends State<QuizScreen> {
-  late final List<QuizQuestion> _questions = _drawQuestions(widget.questions);
+  final _statsStore = QuestionStatsStore();
+  List<QuizQuestion>? _questions;
   int _index = 0;
   int _correctCount = 0;
   int? _selectedOption;
@@ -57,6 +68,13 @@ class _QuizScreenState extends State<QuizScreen> {
   @override
   void initState() {
     super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final questions = await _drawQuestions(widget.questions, widget._resolvedPack);
+    if (!mounted) return;
+    setState(() => _questions = questions);
     _startQuestionTimer();
   }
 
@@ -81,8 +99,10 @@ class _QuizScreenState extends State<QuizScreen> {
 
   void _lockAnswer(int? optionIndex) {
     if (_selectedOption != null) return;
+    final questions = _questions;
+    if (questions == null) return;
     _timer?.cancel();
-    final question = _questions[_index];
+    final question = questions[_index];
     final isCorrect = optionIndex != null && optionIndex == question.correctIndex;
     HapticFeedback.mediumImpact();
     if (!isCorrect) {
@@ -90,32 +110,39 @@ class _QuizScreenState extends State<QuizScreen> {
       // different from "right" by feel alone, not just by color.
       Future.delayed(const Duration(milliseconds: 90), () => HapticFeedback.heavyImpact());
     }
+    // Only worth recording for hardcoded-pack content — an AI-generated
+    // quiz's questions are one-off and never redrawn from, so there's
+    // nothing for spaced repetition or mastery tracking to do with them.
+    if (widget.generatedQuizId == null) {
+      unawaited(_statsStore.recordAttempt(question.id, isCorrect));
+    }
     setState(() {
       _selectedOption = optionIndex ?? -1;
       if (isCorrect) _correctCount += 1;
     });
     Future.delayed(const Duration(milliseconds: 1100), () {
       if (!mounted) return;
-      if (_index + 1 < _questions.length) {
+      if (_index + 1 < questions.length) {
         setState(() {
           _index += 1;
           _selectedOption = null;
         });
         _startQuestionTimer();
       } else {
-        _finish();
+        _finish(questions.length);
       }
     });
   }
 
-  void _finish() {
+  void _finish(int total) {
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
         builder: (_) => QuizResultScreen(
           correctCount: _correctCount,
-          total: _questions.length,
+          total: total,
           questions: widget.questions,
           generatedQuizId: widget.generatedQuizId,
+          pack: widget.pack,
         ),
       ),
     );
@@ -123,13 +150,20 @@ class _QuizScreenState extends State<QuizScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final question = _questions[_index];
+    final questions = _questions;
+    if (questions == null) {
+      return const Scaffold(
+        backgroundColor: StudlokColors.background,
+        body: Center(child: CircularProgressIndicator(color: StudlokColors.accent)),
+      );
+    }
+    final question = questions[_index];
     final urgent = _secondsLeft <= 5 && _selectedOption == null;
     return Scaffold(
       backgroundColor: StudlokColors.background,
       appBar: AppBar(
         title: Text(
-          'QUESTION ${_index + 1} OF ${_questions.length}',
+          'QUESTION ${_index + 1} OF ${questions.length}',
           style: const TextStyle(fontSize: 14, letterSpacing: 0.5),
         ),
       ),
@@ -270,15 +304,17 @@ class QuizResultScreen extends StatefulWidget {
     required this.total,
     this.questions,
     this.generatedQuizId,
+    this.pack,
   });
 
   final int correctCount;
   final int total;
 
-  /// Carried through so "Try again" re-enters the same source (bank or
-  /// generated quiz) instead of always falling back to the hardcoded bank.
+  /// Carried through so "Try again" re-enters the same source (pack or
+  /// generated quiz) instead of always falling back to General Knowledge.
   final List<QuizQuestion>? questions;
   final String? generatedQuizId;
+  final QuestionPack? pack;
 
   @override
   State<QuizResultScreen> createState() => _QuizResultScreenState();
@@ -288,12 +324,32 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
   final _bridge = StudlokNativeBridge();
   final _historyStore = SessionHistoryStore();
   final _courseMaterialRepository = CourseMaterialRepository.instance;
+  final _passThresholdStore = PassThresholdStore();
 
-  bool get _passed => widget.correctCount / widget.total >= _passThreshold;
+  // Starts at the original hardcoded default so this renders immediately
+  // with no loading state of its own — a result screen is a completion
+  // moment, not a place to show a spinner. Corrected via setState the
+  // moment the real (near-instant, local) value loads, in the rare case
+  // someone has actually changed it from the default.
+  int _passThresholdPercent = PassThresholdStore.defaultPercent;
+
+  bool get _passed => widget.correctCount / widget.total >= _passThresholdPercent / 100;
 
   bool _claiming = false;
   bool _claimed = false;
   String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPassThreshold();
+  }
+
+  Future<void> _loadPassThreshold() async {
+    final percent = await _passThresholdStore.load();
+    if (!mounted) return;
+    setState(() => _passThresholdPercent = percent);
+  }
 
   Future<void> _claim() async {
     setState(() => _claiming = true);
@@ -331,7 +387,7 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
   void _retry() {
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
-        builder: (_) => QuizScreen(questions: widget.questions, generatedQuizId: widget.generatedQuizId),
+        builder: (_) => QuizScreen(questions: widget.questions, generatedQuizId: widget.generatedQuizId, pack: widget.pack),
       ),
     );
   }
@@ -363,7 +419,7 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
               Text(
                 _passed
                     ? 'You passed. Claim your scroll time.'
-                    : 'Need ${(_passThreshold * 100).round()}% to earn scroll time — give it another go.',
+                    : 'Need $_passThresholdPercent% to earn scroll time — give it another go.',
                 textAlign: TextAlign.center,
                 style: StudlokTypography.body.copyWith(color: StudlokColors.textSecondary),
               ),
