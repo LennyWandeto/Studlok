@@ -1,0 +1,4 @@
+
+# Local dev-server launch config (Browser preview tooling), machine-specific
+.claude/
+.DS_Store
